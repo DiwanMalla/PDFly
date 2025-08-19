@@ -90,18 +90,15 @@ const HeroSection: React.FC = () => {
     const fileData = {
       id: Date.now().toString(),
       name: selectedFile.name,
-      size: (selectedFile.size / 1024 / 1024).toFixed(2) + " MB",
+      size: (selectedFile.size / 1024 / 1024).toFixed(2) + ' MB',
       type: selectedFile.type,
-      lastModified: selectedFile.lastModified,
+      lastModified: selectedFile.lastModified
     };
-
+    
     // Store in sessionStorage for the tool page to access
-    sessionStorage.setItem("initialFile", JSON.stringify(fileData));
-    sessionStorage.setItem(
-      "initialFileBlob",
-      URL.createObjectURL(selectedFile)
-    );
-
+    sessionStorage.setItem('initialFile', JSON.stringify(fileData));
+    sessionStorage.setItem('initialFileBlob', URL.createObjectURL(selectedFile));
+    
     // Redirect to appropriate tool page
     const toolPath = action.toLowerCase();
     window.location.href = `/tools/${toolPath}`;
@@ -394,6 +391,116 @@ const HeroSection: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Processing Status */}
+                  {isProcessing && (
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
+                      <div className="flex flex-col items-center space-y-3">
+                        <div className="relative">
+                          <svg
+                            className="animate-spin h-8 w-8 text-blue-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-blue-800">
+                            Processing your PDF...
+                          </p>
+                          <p className="text-xs text-blue-600 mt-1">
+                            This may take a few moments
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PDF Preview for unregistered users (no download) */}
+                  {previewUrl && (
+                    <div className="space-y-4">
+                      <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-semibold text-gray-700">
+                              PDF Preview
+                            </h5>
+                            {processedFile && (
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                ✓ {processedFile.action} Complete
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <iframe
+                          src={previewUrl}
+                          title="PDF Preview"
+                          className="w-full h-80 border-0"
+                        />
+                      </div>
+
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            <svg
+                              className="h-5 w-5 text-amber-600"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h6 className="text-sm font-medium text-amber-800">
+                              Preview Only
+                            </h6>
+                            <p className="text-sm text-amber-700 mt-1">
+                              {processedFile
+                                ? `Your PDF has been successfully processed with ${processedFile.action.toLowerCase()}! `
+                                : "This is a preview of your uploaded PDF. "}
+                              To download the processed file, please create a
+                              free account.
+                            </p>
+                            <div className="mt-3 flex space-x-3">
+                              <button
+                                onClick={() =>
+                                  (window.location.href = "/signup")
+                                }
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors duration-200"
+                              >
+                                Sign Up for Free
+                              </button>
+                              <button
+                                onClick={() =>
+                                  (window.location.href = "/login")
+                                }
+                                className="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors duration-200"
+                              >
+                                Login
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {/* TODO: Implement actual PDF processing actions and Cloudflare R2 upload */}
                 </div>
               </div>

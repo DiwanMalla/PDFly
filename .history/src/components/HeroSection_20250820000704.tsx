@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React from "react";
 import Button from "@/components/ui/Button";
 import { Play, CheckCircle, Sparkles, ArrowRight } from "@/components/ui/Icons";
 import { motion } from "framer-motion";
@@ -22,91 +22,6 @@ const HeroSection: React.FC = () => {
     { number: "4.9/5", label: "User Rating" },
   ];
 
-  const processorRef = useRef<HTMLDivElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [showError, setShowError] = useState(false);
-
-  const handleStartProcessing = () => {
-    setTimeout(() => {
-      processorRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type === "application/pdf") {
-        setSelectedFile(file);
-        setShowError(false);
-      } else {
-        setShowError(true);
-        setTimeout(() => setShowError(false), 3000);
-      }
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (file.type === "application/pdf") {
-        setSelectedFile(file);
-        setShowError(false);
-      } else {
-        setShowError(true);
-        setTimeout(() => setShowError(false), 3000);
-      }
-    }
-  };
-
-  const handleBrowseClick = () => {
-    document.getElementById("pdf-upload-input")?.click();
-  };
-
-  // TODO: Integrate Cloudflare R2 for PDF storage and retrieval
-
-  const handleProcessClick = async (action: string) => {
-    if (!selectedFile) {
-      setShowError(true);
-      setTimeout(() => setShowError(false), 3000);
-      return;
-    }
-
-    // Store file data for the tool pages
-    const fileData = {
-      id: Date.now().toString(),
-      name: selectedFile.name,
-      size: (selectedFile.size / 1024 / 1024).toFixed(2) + " MB",
-      type: selectedFile.type,
-      lastModified: selectedFile.lastModified,
-    };
-
-    // Store in sessionStorage for the tool page to access
-    sessionStorage.setItem("initialFile", JSON.stringify(fileData));
-    sessionStorage.setItem(
-      "initialFileBlob",
-      URL.createObjectURL(selectedFile)
-    );
-
-    // Redirect to appropriate tool page
-    const toolPath = action.toLowerCase();
-    window.location.href = `/tools/${toolPath}`;
-    return;
-  };
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Background Elements */}
@@ -194,7 +109,9 @@ const HeroSection: React.FC = () => {
               <Button
                 size="xl"
                 className="group"
-                onClick={handleStartProcessing}
+                onClick={() => {
+                  window.location.href = "/app/tools";
+                }}
               >
                 Start Processing Free
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
@@ -239,10 +156,10 @@ const HeroSection: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative"
-            ref={processorRef}
           >
-            {/* PDF Processor Card */}
+            {/* Mock Interface */}
             <div className="relative max-w-lg mx-auto">
+              {/* Main Card */}
               <div className="bg-white rounded-3xl shadow-2xl p-8 relative z-10">
                 <div className="space-y-6">
                   {/* Header */}
@@ -258,143 +175,38 @@ const HeroSection: React.FC = () => {
                   </div>
 
                   {/* Upload Area */}
-                  <div
-                    className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors duration-200 ${
-                      isDragOver
-                        ? "border-blue-400 bg-blue-50"
-                        : selectedFile
-                        ? "border-green-400 bg-green-50"
-                        : "border-gray-200 bg-gray-50"
-                    }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  >
-                    <input
-                      id="pdf-upload-input"
-                      type="file"
-                      accept="application/pdf"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                    <div
-                      className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 cursor-pointer transition-colors duration-200 ${
-                        selectedFile
-                          ? "bg-green-100"
-                          : "bg-blue-100 hover:bg-blue-200"
-                      }`}
-                      onClick={handleBrowseClick}
-                    >
-                      {selectedFile ? (
-                        <svg
-                          className="w-8 h-8 text-green-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-8 h-8 text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                          />
-                        </svg>
-                      )}
+                  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center bg-gray-50">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-6 h-6 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                      </svg>
                     </div>
-
-                    {selectedFile ? (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-green-700">
-                          ✓ {selectedFile.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                        <button
-                          onClick={() => setSelectedFile(null)}
-                          className="text-xs text-red-600 hover:text-red-800 underline"
-                        >
-                          Remove file
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-700 font-medium">
-                          Drop your PDF here or click to browse
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Supports PDF files up to 100MB
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Error Message */}
-                    {showError && (
-                      <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                        <p className="text-sm text-red-700">
-                          {selectedFile
-                            ? "Please upload a PDF file first"
-                            : "Please upload a valid PDF file"}
-                        </p>
-                      </div>
-                    )}
+                    <p className="text-sm text-gray-600">
+                      Drop your PDF here or click to browse
+                    </p>
                   </div>
 
                   {/* Processing Options */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-gray-800 text-center">
-                      Choose Processing Tool
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { name: "Merge", icon: "📄", desc: "Combine PDFs" },
-                        { name: "Split", icon: "✂️", desc: "Split pages" },
-                        { name: "Compress", icon: "🗜️", desc: "Reduce size" },
-                        { name: "Convert", icon: "🔄", desc: "Change format" },
-                      ].map((tool) => (
-                        <button
-                          key={tool.name}
-                          className={`p-4 rounded-xl text-sm font-medium transition-all duration-200 border-2 ${
-                            selectedFile
-                              ? "bg-white border-blue-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-700 shadow-sm hover:shadow-md"
-                              : "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
-                          }`}
-                          onClick={() => handleProcessClick(tool.name)}
-                          disabled={!selectedFile}
-                        >
-                          <div className="flex flex-col items-center space-y-1">
-                            <span className="text-lg">{tool.icon}</span>
-                            <span className="font-semibold">{tool.name}</span>
-                            <span className="text-xs opacity-75">
-                              {tool.desc}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    {!selectedFile && (
-                      <p className="text-xs text-center text-gray-500 mt-2">
-                        Upload a PDF to enable processing tools
-                      </p>
-                    )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {["Merge", "Split", "Compress", "Convert"].map((action) => (
+                      <button
+                        key={action}
+                        className="p-3 bg-gray-50 hover:bg-blue-50 rounded-xl text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200"
+                      >
+                        {action}
+                      </button>
+                    ))}
                   </div>
-
-                  {/* TODO: Implement actual PDF processing actions and Cloudflare R2 upload */}
                 </div>
               </div>
 

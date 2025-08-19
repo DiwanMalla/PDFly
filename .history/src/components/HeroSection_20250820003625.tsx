@@ -26,8 +26,10 @@ const HeroSection: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
   const handleStartProcessing = () => {
+    setShowUpload(true);
     setTimeout(() => {
       processorRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
@@ -79,6 +81,13 @@ const HeroSection: React.FC = () => {
 
   // TODO: Integrate Cloudflare R2 for PDF storage and retrieval
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedFile, setProcessedFile] = useState<{
+    key: string;
+    action: string;
+  } | null>(null);
+
   const handleProcessClick = async (action: string) => {
     if (!selectedFile) {
       setShowError(true);
@@ -86,26 +95,27 @@ const HeroSection: React.FC = () => {
       return;
     }
 
-    // Store file data for the tool pages
-    const fileData = {
-      id: Date.now().toString(),
-      name: selectedFile.name,
-      size: (selectedFile.size / 1024 / 1024).toFixed(2) + " MB",
-      type: selectedFile.type,
-      lastModified: selectedFile.lastModified,
-    };
+    setIsProcessing(true);
 
-    // Store in sessionStorage for the tool page to access
-    sessionStorage.setItem("initialFile", JSON.stringify(fileData));
-    sessionStorage.setItem(
-      "initialFileBlob",
-      URL.createObjectURL(selectedFile)
-    );
+    try {
+      // For unregistered users, show preview only (no download)
+      if (!previewUrl) {
+        const url = URL.createObjectURL(selectedFile);
+        setPreviewUrl(url);
+      }
 
-    // Redirect to appropriate tool page
-    const toolPath = action.toLowerCase();
-    window.location.href = `/tools/${toolPath}`;
-    return;
+      // TODO: Upload to Cloudflare R2 and process PDF
+      // const { previewUrl: processedUrl, downloadKey } = await processPDF(selectedFile, action as any);
+
+      // Simulate processing
+      setTimeout(() => {
+        setProcessedFile({ key: `processed-${Date.now()}`, action });
+        setIsProcessing(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Error processing PDF:", error);
+      setIsProcessing(false);
+    }
   };
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -258,13 +268,13 @@ const HeroSection: React.FC = () => {
                   </div>
 
                   {/* Upload Area */}
-                  <div
+                  <div 
                     className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors duration-200 ${
-                      isDragOver
-                        ? "border-blue-400 bg-blue-50"
-                        : selectedFile
-                        ? "border-green-400 bg-green-50"
-                        : "border-gray-200 bg-gray-50"
+                      isDragOver 
+                        ? 'border-blue-400 bg-blue-50' 
+                        : selectedFile 
+                          ? 'border-green-400 bg-green-50' 
+                          : 'border-gray-200 bg-gray-50'
                     }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -279,43 +289,21 @@ const HeroSection: React.FC = () => {
                     />
                     <div
                       className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 cursor-pointer transition-colors duration-200 ${
-                        selectedFile
-                          ? "bg-green-100"
-                          : "bg-blue-100 hover:bg-blue-200"
+                        selectedFile ? 'bg-green-100' : 'bg-blue-100 hover:bg-blue-200'
                       }`}
                       onClick={handleBrowseClick}
                     >
                       {selectedFile ? (
-                        <svg
-                          className="w-8 h-8 text-green-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
+                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       ) : (
-                        <svg
-                          className="w-8 h-8 text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                          />
+                        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       )}
                     </div>
-
+                    
                     {selectedFile ? (
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-green-700">
@@ -341,59 +329,87 @@ const HeroSection: React.FC = () => {
                         </p>
                       </div>
                     )}
-
+                    
                     {/* Error Message */}
                     {showError && (
                       <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
                         <p className="text-sm text-red-700">
-                          {selectedFile
-                            ? "Please upload a PDF file first"
-                            : "Please upload a valid PDF file"}
+                          {selectedFile ? 'Please upload a PDF file first' : 'Please upload a valid PDF file'}
                         </p>
                       </div>
                     )}
                   </div>
 
                   {/* Processing Options */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-gray-800 text-center">
-                      Choose Processing Tool
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { name: "Merge", icon: "📄", desc: "Combine PDFs" },
-                        { name: "Split", icon: "✂️", desc: "Split pages" },
-                        { name: "Compress", icon: "🗜️", desc: "Reduce size" },
-                        { name: "Convert", icon: "🔄", desc: "Change format" },
-                      ].map((tool) => (
-                        <button
-                          key={tool.name}
-                          className={`p-4 rounded-xl text-sm font-medium transition-all duration-200 border-2 ${
-                            selectedFile
-                              ? "bg-white border-blue-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-700 shadow-sm hover:shadow-md"
-                              : "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
-                          }`}
-                          onClick={() => handleProcessClick(tool.name)}
-                          disabled={!selectedFile}
-                        >
-                          <div className="flex flex-col items-center space-y-1">
-                            <span className="text-lg">{tool.icon}</span>
-                            <span className="font-semibold">{tool.name}</span>
-                            <span className="text-xs opacity-75">
-                              {tool.desc}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    {!selectedFile && (
-                      <p className="text-xs text-center text-gray-500 mt-2">
-                        Upload a PDF to enable processing tools
-                      </p>
-                    )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {["Merge", "Split", "Compress", "Convert"].map((action) => (
+                      <button
+                        key={action}
+                        className="p-3 bg-gray-50 hover:bg-blue-50 rounded-xl text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleProcessClick(action)}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? "Processing..." : action}
+                      </button>
+                    ))}
                   </div>
 
+                  {/* Processing Status */}
+                  {isProcessing && (
+                    <div className="text-center">
+                      <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm">
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-4 w-4 text-blue-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Processing your PDF...
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PDF Preview for unregistered users (no download) */}
+                  {previewUrl && (
+                    <div className="mt-6">
+                      <iframe
+                        src={previewUrl}
+                        title="PDF Preview"
+                        className="w-full h-64 border rounded-xl"
+                      />
+                      <div className="text-xs text-gray-500 mt-2">
+                        Preview only.{" "}
+                        {processedFile
+                          ? `${processedFile.action} completed! `
+                          : ""}
+                        Download available for registered users.
+                      </div>
+                      {processedFile && (
+                        <div className="mt-2">
+                          <button
+                            className="text-blue-600 text-sm hover:underline"
+                            onClick={() => (window.location.href = "/signup")}
+                          >
+                            Sign up to download processed file
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {/* TODO: Implement actual PDF processing actions and Cloudflare R2 upload */}
                 </div>
               </div>

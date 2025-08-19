@@ -100,9 +100,9 @@ PDFly is a comprehensive SaaS platform designed to revolutionize PDF processing 
 
 5. **Start the development server**
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)

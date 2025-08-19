@@ -90,18 +90,15 @@ const HeroSection: React.FC = () => {
     const fileData = {
       id: Date.now().toString(),
       name: selectedFile.name,
-      size: (selectedFile.size / 1024 / 1024).toFixed(2) + " MB",
+      size: (selectedFile.size / 1024 / 1024).toFixed(2) + ' MB',
       type: selectedFile.type,
-      lastModified: selectedFile.lastModified,
+      lastModified: selectedFile.lastModified
     };
-
+    
     // Store in sessionStorage for the tool page to access
-    sessionStorage.setItem("initialFile", JSON.stringify(fileData));
-    sessionStorage.setItem(
-      "initialFileBlob",
-      URL.createObjectURL(selectedFile)
-    );
-
+    sessionStorage.setItem('initialFile', JSON.stringify(fileData));
+    sessionStorage.setItem('initialFileBlob', URL.createObjectURL(selectedFile));
+    
     // Redirect to appropriate tool page
     const toolPath = action.toLowerCase();
     window.location.href = `/tools/${toolPath}`;

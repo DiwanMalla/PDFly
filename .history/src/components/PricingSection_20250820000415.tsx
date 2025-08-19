@@ -123,13 +123,7 @@ const PricingSection: React.FC = () => {
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center space-x-4 mb-8">
-            <span
-              className={`text-gray-600 font-medium ${
-                !annual ? "text-blue-600" : ""
-              }`}
-            >
-              Monthly
-            </span>
+            <span className={`text-gray-600 font-medium ${!annual ? "text-blue-600" : ""}`}>Monthly</span>
             <button
               aria-label="Toggle annual pricing"
               className="relative focus:outline-none"
@@ -142,11 +136,7 @@ const PricingSection: React.FC = () => {
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
             </button>
-            <span
-              className={`text-gray-600 font-medium ${
-                annual ? "text-blue-600" : ""
-              }`}
-            >
+            <span className={`text-gray-600 font-medium ${annual ? "text-blue-600" : ""}`}>
               Annual
               <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                 20% off
