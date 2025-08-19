@@ -1,0 +1,25 @@
+// Feature icons using Lucide React
+export { 
+  FileText,
+  Split,
+  Compress,
+  Edit3,
+  Search,
+  PenTool,
+  Shield,
+  Zap,
+  Users,
+  Cloud,
+  CheckCircle,
+  ArrowRight,
+  Play,
+  Star,
+  Award,
+  Sparkles,
+  Layers,
+  BarChart3,
+  Lock,
+  Globe,
+  Smartphone,
+  Laptop
+} from 'lucide-react';
