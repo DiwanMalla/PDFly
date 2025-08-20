@@ -9,25 +9,11 @@ import {
   Share2,
   Trash2,
   FileText,
-  SplitSquareHorizontal as Split,
+  Split,
+  Eye,
   Scissors,
   Grid3X3,
-} from "lucide-react";
-
-interface PDFPage {
-  id: string;
-  pageNumber: number;
-  thumbnail: string;
-  selected: boolean;
-}
-
-interface SplitOptions {
-  mode: "pages" | "range" | "extract";
-  specificPages?: number[];
-  startPage?: number;
-  endPage?: number;
-  extractPages?: number[];
-}
+} from "@/components/ui/Icons";
 
 const SplitPage: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);

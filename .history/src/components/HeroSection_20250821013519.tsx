@@ -97,19 +97,19 @@ const HeroSection: React.FC = () => {
 
     // Store in sessionStorage for the tool page to access
     sessionStorage.setItem("initialFile", JSON.stringify(fileData));
-
+    
     // Convert file to base64 for reliable storage
     const reader = new FileReader();
     reader.onload = () => {
       const base64Data = reader.result as string;
       sessionStorage.setItem("initialFileBlob", base64Data);
-
+      
       // Redirect to appropriate tool page after storing
       const toolPath = action.toLowerCase();
       window.location.href = `/tools/${toolPath}`;
     };
     reader.readAsDataURL(selectedFile);
-
+    
     return;
   };
   return (

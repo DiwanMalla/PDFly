@@ -22,7 +22,7 @@ interface PDFPage {
 }
 
 interface SplitOptions {
-  mode: "pages" | "range" | "extract";
+  mode: 'pages' | 'range' | 'extract';
   specificPages?: number[];
   startPage?: number;
   endPage?: number;

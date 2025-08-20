@@ -43,7 +43,6 @@ const MergePage: React.FC = () => {
   const [mergedFile, setMergedFile] = useState<{
     preview: string;
     downloadKey: string;
-    blob?: Blob;
   } | null>(null);
 
   // Get initial file from home page
@@ -55,53 +54,47 @@ const MergePage: React.FC = () => {
       if (storedFileData && storedFileBlob) {
         try {
           const fileData = JSON.parse(storedFileData);
+          
+          // Convert blob URL back to blob, then to File object
+          fetch(storedFileBlob)
+            .then(res => res.blob())
+            .then(blob => {
+              const file = new File([blob], fileData.name, { type: fileData.type });
+              
+              // Create a new blob URL for consistent handling
+              const newPreviewUrl = URL.createObjectURL(file);
+              
+              const initialFile: PDFFile = {
+                id: fileData.id,
+                file: file,
+                preview: newPreviewUrl,
+                name: fileData.name,
+                size: fileData.size,
+              };
 
-          // Check if we have base64 data
-          if (storedFileBlob.startsWith("data:")) {
-            // Convert base64 to blob
-            fetch(storedFileBlob)
-              .then((res) => res.blob())
-              .then((blob) => {
-                const file = new File([blob], fileData.name, {
-                  type: fileData.type,
-                });
+              setUploadedFiles([initialFile]);
+              
+              // Clean up the old blob URL
+              URL.revokeObjectURL(storedFileBlob);
+            })
+            .catch(error => {
+              console.error("Error converting blob:", error);
+              // Fallback: try to use the stored blob URL directly
+              const initialFile: PDFFile = {
+                id: fileData.id,
+                file: new File([], fileData.name, { type: fileData.type }),
+                preview: storedFileBlob,
+                name: fileData.name,
+                size: fileData.size,
+              };
+              setUploadedFiles([initialFile]);
+            });
 
-                // Create a new blob URL for preview
-                const newPreviewUrl = URL.createObjectURL(file);
-
-                const initialFile: PDFFile = {
-                  id: fileData.id,
-                  file: file,
-                  preview: newPreviewUrl,
-                  name: fileData.name,
-                  size: fileData.size,
-                };
-
-                setUploadedFiles([initialFile]);
-              })
-              .catch((error) => {
-                console.error("Error converting base64 to blob:", error);
-                // Clear corrupted data
-                sessionStorage.removeItem("initialFile");
-                sessionStorage.removeItem("initialFileBlob");
-              });
-          } else {
-            // Invalid data format
-            console.error("Invalid stored data format");
-            sessionStorage.removeItem("initialFile");
-            sessionStorage.removeItem("initialFileBlob");
-          }
-
-          // Clean up sessionStorage after loading
-          setTimeout(() => {
-            sessionStorage.removeItem("initialFile");
-            sessionStorage.removeItem("initialFileBlob");
-          }, 1000);
-        } catch (error) {
-          console.error("Error parsing stored file data:", error);
-          // Clear corrupted data
+          // Clean up sessionStorage
           sessionStorage.removeItem("initialFile");
           sessionStorage.removeItem("initialFileBlob");
+        } catch (error) {
+          console.error("Error loading initial file:", error);
         }
       }
     };
@@ -115,7 +108,7 @@ const MergePage: React.FC = () => {
       if (file.type === "application/pdf") {
         // Create a fresh blob URL for consistent handling
         const previewUrl = URL.createObjectURL(file);
-
+        
         const newFile: PDFFile = {
           id: Date.now().toString(),
           file,
@@ -150,7 +143,7 @@ const MergePage: React.FC = () => {
         if (file.type === "application/pdf") {
           // Create a fresh blob URL for consistent handling
           const previewUrl = URL.createObjectURL(file);
-
+          
           const newFile: PDFFile = {
             id: Date.now().toString() + Math.random(),
             file,
@@ -166,7 +159,7 @@ const MergePage: React.FC = () => {
 
   const removeFile = (id: string) => {
     setUploadedFiles((prev) => {
-      const fileToRemove = prev.find((f) => f.id === id);
+      const fileToRemove = prev.find(f => f.id === id);
       if (fileToRemove && fileToRemove.preview) {
         // Clean up the blob URL to prevent memory leaks
         URL.revokeObjectURL(fileToRemove.preview);
@@ -187,14 +180,14 @@ const MergePage: React.FC = () => {
 
     try {
       // Dynamic import to avoid SSR issues
-      const { PDFDocument } = await import("pdf-lib");
+      const { PDFDocument } = await import('pdf-lib');
 
       // Step 1: Create new document
       setMergeProgress((prev) => ({
         ...prev,
         progress: 10,
         currentStep: "Creating merged document...",
-        speed: "1.2 MB/s",
+        speed: "1.2 MB/s"
       }));
 
       const mergedPdf = await PDFDocument.create();
@@ -202,24 +195,24 @@ const MergePage: React.FC = () => {
       // Step 2: Process each file
       for (let i = 0; i < uploadedFiles.length; i++) {
         const file = uploadedFiles[i];
-
+        
         setMergeProgress((prev) => ({
           ...prev,
           progress: 20 + (i * 60) / uploadedFiles.length,
           currentStep: `Processing ${file.name}...`,
-          speed: "2.5 MB/s",
+          speed: "2.5 MB/s"
         }));
 
         // Read file as array buffer
         const arrayBuffer = await file.file.arrayBuffer();
-
+        
         // Load PDF
         const pdf = await PDFDocument.load(arrayBuffer);
-
+        
         // Copy all pages
         const pageIndices = pdf.getPageIndices();
         const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
-
+        
         // Add pages to merged document
         copiedPages.forEach((page) => mergedPdf.addPage(page));
       }
@@ -229,13 +222,11 @@ const MergePage: React.FC = () => {
         ...prev,
         progress: 90,
         currentStep: "Generating merged PDF...",
-        speed: "3.1 MB/s",
+        speed: "3.1 MB/s"
       }));
 
       const mergedPdfBytes = await mergedPdf.save();
-      const mergedBlob = new Blob([new Uint8Array(mergedPdfBytes)], {
-        type: "application/pdf",
-      });
+      const mergedBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
       const mergedPreview = URL.createObjectURL(mergedBlob);
 
       // Step 4: Complete
@@ -243,45 +234,35 @@ const MergePage: React.FC = () => {
         ...prev,
         progress: 100,
         currentStep: "Merge complete!",
-        speed: "0 MB/s",
+        speed: "0 MB/s"
       }));
 
       setTimeout(() => {
         setMergeProgress((prev) => ({ ...prev, isProcessing: false }));
-
+        
         setMergedFile({
           preview: mergedPreview,
           downloadKey: "merged-" + Date.now(),
           blob: mergedBlob, // Store the blob for download
         });
       }, 500);
+
     } catch (error) {
-      console.error("Error merging PDFs:", error);
+      console.error('Error merging PDFs:', error);
       setMergeProgress((prev) => ({
         ...prev,
         isProcessing: false,
         currentStep: "Error occurred during merge",
       }));
-      alert("Failed to merge PDFs. Please try again.");
+      alert('Failed to merge PDFs. Please try again.');
     }
   };
 
   const handleDownload = () => {
-    if (mergedFile?.blob) {
-      // Create download link
-      const downloadUrl = URL.createObjectURL(mergedFile.blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = `merged-${Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(downloadUrl);
-    } else {
-      // Fallback: redirect to signup for authentication
-      window.location.href =
-        "/signup?redirect=download&file=" + mergedFile?.downloadKey;
-    }
+    // Check if user is signed in
+    // For demo, redirect to signup
+    window.location.href =
+      "/signup?redirect=download&file=" + mergedFile?.downloadKey;
   };
 
   return (
@@ -443,7 +424,7 @@ const MergePage: React.FC = () => {
                               <button
                                 onClick={() => {
                                   // Create a new window/tab for better PDF viewing
-                                  const newWindow = window.open("", "_blank");
+                                  const newWindow = window.open('', '_blank');
                                   if (newWindow) {
                                     newWindow.document.write(`
                                       <!DOCTYPE html>
@@ -600,7 +581,7 @@ const MergePage: React.FC = () => {
                               </span>
                               <button
                                 onClick={() => {
-                                  const newWindow = window.open("", "_blank");
+                                  const newWindow = window.open('', '_blank');
                                   if (newWindow) {
                                     newWindow.document.write(`
                                       <!DOCTYPE html>
@@ -630,16 +611,12 @@ const MergePage: React.FC = () => {
                           <div className="relative bg-gray-100 h-32 flex items-center justify-center">
                             <div className="text-center">
                               <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                                <span className="text-white font-bold text-xs">
-                                  PDF
-                                </span>
+                                <span className="text-white font-bold text-xs">PDF</span>
                               </div>
                               <p className="text-xs text-gray-600 truncate max-w-full px-2">
                                 {file.name}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {file.size}
-                              </p>
+                              <p className="text-xs text-gray-500 mt-1">{file.size}</p>
                             </div>
                           </div>
                         </div>
@@ -704,7 +681,7 @@ const MergePage: React.FC = () => {
                           </span>
                           <button
                             onClick={() => {
-                              const newWindow = window.open("", "_blank");
+                              const newWindow = window.open('', '_blank');
                               if (newWindow) {
                                 newWindow.document.write(`
                                   <!DOCTYPE html>
@@ -743,7 +720,7 @@ const MergePage: React.FC = () => {
                             </p>
                             <button
                               onClick={() => {
-                                const newWindow = window.open("", "_blank");
+                                const newWindow = window.open('', '_blank');
                                 if (newWindow) {
                                   newWindow.document.write(`
                                     <!DOCTYPE html>
@@ -807,7 +784,7 @@ const MergePage: React.FC = () => {
 
                           <button
                             onClick={() => {
-                              const newWindow = window.open("", "_blank");
+                              const newWindow = window.open('', '_blank');
                               if (newWindow) {
                                 newWindow.document.write(`
                                   <!DOCTYPE html>
