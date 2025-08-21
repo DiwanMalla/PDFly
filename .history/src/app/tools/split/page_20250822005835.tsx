@@ -589,37 +589,37 @@ const SplitPage: React.FC = () => {
                     </h2>
                   </div>
 
-                  <div className="p-4 space-y-4">{/* Reduced padding for more compact design */}
+                  <div className="p-6 space-y-6">
                     {/* Split Mode Selection */}
-                    <div className="space-y-3">{/* Reduced spacing */}
+                    <div className="space-y-4">
                       {[
                         {
                           mode: "pages",
                           icon: Grid3X3,
-                          title: "Extract Pages",
-                          desc: "Select specific pages",
+                          title: "Extract Selected Pages",
+                          desc: "Choose specific pages to extract",
                           color: "blue",
                         },
                         {
                           mode: "ranges",
                           icon: BarChart3,
                           title: "Split by Ranges",
-                          desc: "Define page ranges",
+                          desc: "Define custom page ranges",
                           color: "green",
                         },
                         {
                           mode: "every",
                           icon: Layers,
                           title: "Split Every N Pages",
-                          desc: "Equal page counts",
+                          desc: "Create files with equal page counts",
                           color: "purple",
                         },
                       ].map((option) => (
                         <motion.label
                           key={option.mode}
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.99 }}
-                          className={`flex items-center space-x-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`flex items-start space-x-4 p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
                             splitOptions.mode === option.mode
                               ? `border-${option.color}-500 bg-${option.color}-50`
                               : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
@@ -639,17 +639,17 @@ const SplitPage: React.FC = () => {
                                   | "every",
                               }))
                             }
-                            className="text-orange-600 focus:ring-orange-500"
+                            className="mt-1 text-orange-600 focus:ring-orange-500"
                           />
                           <div
-                            className={`p-2 rounded-lg ${
+                            className={`p-2 rounded-xl ${
                               splitOptions.mode === option.mode
                                 ? `bg-${option.color}-100`
                                 : "bg-gray-100"
                             }`}
                           >
                             <option.icon
-                              className={`w-4 h-4 ${
+                              className={`w-5 h-5 ${
                                 splitOptions.mode === option.mode
                                   ? `text-${option.color}-600`
                                   : "text-gray-600"
@@ -657,10 +657,10 @@ const SplitPage: React.FC = () => {
                             />
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 text-sm">
+                            <div className="font-semibold text-gray-900">
                               {option.title}
                             </div>
-                            <div className="text-xs text-gray-600">
+                            <div className="text-sm text-gray-600 mt-1">
                               {option.desc}
                             </div>
                           </div>
@@ -674,15 +674,15 @@ const SplitPage: React.FC = () => {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-green-50 p-3 rounded-lg border border-green-200"
+                        className="bg-green-50 p-4 rounded-xl border border-green-200"
                       >
-                        <label className="block text-sm font-medium text-green-800 mb-2">
+                        <label className="block text-sm font-semibold text-green-800 mb-2">
                           Page Ranges
                         </label>
                         <input
                           type="text"
                           placeholder="e.g., 1-3,5-7,9"
-                          className="w-full p-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-sm"
+                          className="w-full p-3 border border-green-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
                           value={splitOptions.ranges}
                           onChange={(e) =>
                             setSplitOptions((prev) => ({
@@ -691,9 +691,9 @@ const SplitPage: React.FC = () => {
                             }))
                           }
                         />
-                        <p className="text-xs text-green-600 mt-1 flex items-center">
+                        <p className="text-xs text-green-600 mt-2 flex items-center">
                           <Clock className="w-3 h-3 mr-1" />
-                          Comma-separated ranges or pages
+                          Use comma to separate ranges, dash for page ranges
                         </p>
                       </motion.div>
                     )}
@@ -704,12 +704,12 @@ const SplitPage: React.FC = () => {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-purple-50 p-3 rounded-lg border border-purple-200"
+                        className="bg-purple-50 p-4 rounded-xl border border-purple-200"
                       >
-                        <label className="block text-sm font-medium text-purple-800 mb-2">
+                        <label className="block text-sm font-semibold text-purple-800 mb-3">
                           Pages per Split
                         </label>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <button
                             onClick={() =>
                               setSplitOptions((prev) => ({
@@ -717,15 +717,15 @@ const SplitPage: React.FC = () => {
                                 everyNPages: Math.max(1, prev.everyNPages - 1),
                               }))
                             }
-                            className="p-2 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors"
+                            className="p-3 border border-purple-300 rounded-xl hover:bg-purple-100 transition-colors"
                           >
-                            <Minus className="w-3 h-3 text-purple-600" />
+                            <Minus className="w-4 h-4 text-purple-600" />
                           </button>
                           <input
                             type="number"
                             min="1"
                             max={pdfPages.length}
-                            className="flex-1 p-2 border border-purple-300 rounded-lg text-center focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white font-medium text-sm"
+                            className="flex-1 p-3 border border-purple-300 rounded-xl text-center focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white font-semibold"
                             value={splitOptions.everyNPages}
                             onChange={(e) =>
                               setSplitOptions((prev) => ({
@@ -744,9 +744,9 @@ const SplitPage: React.FC = () => {
                                 ),
                               }))
                             }
-                            className="p-2 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors"
+                            className="p-3 border border-purple-300 rounded-xl hover:bg-purple-100 transition-colors"
                           >
-                            <Plus className="w-3 h-3 text-purple-600" />
+                            <Plus className="w-4 h-4 text-purple-600" />
                           </button>
                         </div>
                       </motion.div>
@@ -758,13 +758,13 @@ const SplitPage: React.FC = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={selectAllPages}
-                          className="flex-1 py-2 px-3 text-sm font-medium border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-blue-600"
+                          className="flex-1 py-3 px-4 text-sm font-medium border border-blue-300 rounded-xl hover:bg-blue-50 transition-colors text-blue-600"
                         >
                           Select All
                         </button>
                         <button
                           onClick={deselectAllPages}
-                          className="flex-1 py-2 px-3 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+                          className="flex-1 py-3 px-4 text-sm font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-gray-600"
                         >
                           Clear All
                         </button>
@@ -785,11 +785,11 @@ const SplitPage: React.FC = () => {
                             (splitOptions.mode === "ranges" &&
                               !splitOptions.ranges.trim())
                           }
-                          className="w-full bg-gradient-to-r from-orange-600 to-pink-600 text-white py-3 rounded-xl font-bold hover:shadow-lg disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2"
+                          className="w-full bg-gradient-to-r from-orange-600 to-pink-600 text-white py-4 rounded-xl font-bold hover:shadow-lg disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-3"
                         >
-                          <Scissors className="w-4 h-4" />
+                          <Scissors className="w-5 h-5" />
                           <span>Split PDF</span>
-                          <Sparkles className="w-4 h-4" />
+                          <Sparkles className="w-5 h-5" />
                         </motion.button>
                       )}
                   </div>
@@ -802,34 +802,34 @@ const SplitPage: React.FC = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+                      className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden"
                     >
-                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 text-white">
-                        <h3 className="text-base font-bold flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Splitting PDF
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 text-white">
+                        <h3 className="text-lg font-bold flex items-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                          Processing PDF
                         </h3>
                       </div>
-                      <div className="p-4 space-y-3">
-                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div className="p-6 space-y-4">
+                        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                           <motion.div
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full"
+                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${splitProgress.progress}%` }}
                             transition={{ duration: 0.5 }}
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">
+                          <span className="text-sm text-gray-600">
                             {splitProgress.currentStep}
                           </span>
-                          <span className="font-bold text-blue-600 text-sm">
+                          <span className="font-bold text-blue-600">
                             {splitProgress.progress}%
                           </span>
                         </div>
                         <div className="flex items-center text-xs text-gray-500">
                           <Clock className="w-3 h-3 mr-1" />
-                          Speed: {splitProgress.speed}
+                          Processing speed: {splitProgress.speed}
                         </div>
                       </div>
                     </motion.div>
@@ -843,55 +843,55 @@ const SplitPage: React.FC = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+                      className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden"
                     >
-                      <div className="bg-gradient-to-r from-green-500 to-teal-500 p-4 text-white">
+                      <div className="bg-gradient-to-r from-green-500 to-teal-500 p-6 text-white">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-base font-bold flex items-center">
-                            <Check className="w-4 h-4 mr-2" />
+                          <h3 className="text-lg font-bold flex items-center">
+                            <Check className="w-5 h-5 mr-2" />
                             Split Complete!
                           </h3>
                           <button
                             onClick={downloadAllSplits}
-                            className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                           >
                             Download All
                           </button>
                         </div>
                       </div>
-                      <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                      <div className="p-6 space-y-3 max-h-80 overflow-y-auto">
                         {splitResults.map((result, index) => (
                           <motion.div
                             key={result.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200"
+                            className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border border-gray-200"
                           >
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900 text-sm">
+                              <div className="font-semibold text-gray-900">
                                 {result.name}
                               </div>
-                              <div className="text-xs text-gray-600 flex items-center space-x-2">
+                              <div className="text-sm text-gray-600 flex items-center space-x-2">
                                 <span>Pages: {result.pages.join(", ")}</span>
                                 <span>•</span>
                                 <span>{result.size}</span>
                               </div>
                             </div>
-                            <div className="flex space-x-1">
+                            <div className="flex space-x-2">
                               <button
                                 onClick={() => previewSplitFile(result)}
-                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 title="Preview"
                               >
-                                <Eye className="w-3 h-3" />
+                                <Eye className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => downloadSplitFile(result)}
-                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                                 title="Download"
                               >
-                                <Download className="w-3 h-3" />
+                                <Download className="w-4 h-4" />
                               </button>
                             </div>
                           </motion.div>
