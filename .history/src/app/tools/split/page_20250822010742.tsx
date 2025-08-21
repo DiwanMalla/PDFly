@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
-import { loadPDFPages } from "@/lib/pdf-utils";
+import { loadPDFPages, PDFPageInfo } from "@/lib/pdf-utils";
 import {
   ArrowLeft,
   Download,
@@ -51,8 +50,14 @@ interface SplitOptions {
   extractPages: number[];
 }
 
+interface SplitProgress {
+  isProcessing: boolean;
+  progress: number;
+  currentStep: string;
+  speed: string;
+}
+
 const SplitPage: React.FC = () => {
-  const router = useRouter();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [pdfPages, setPdfPages] = useState<PDFPage[]>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
@@ -64,7 +69,12 @@ const SplitPage: React.FC = () => {
     everyNPages: 1,
     extractPages: [],
   });
-
+  const [splitProgress, setSplitProgress] = useState<SplitProgress>({
+    isProcessing: false,
+    progress: 0,
+    currentStep: "",
+    speed: "",
+  });
   const [splitResults, setSplitResults] = useState<SplitResult[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -221,32 +231,212 @@ const SplitPage: React.FC = () => {
   const handleSplit = async () => {
     if (!uploadedFile || pdfPages.length === 0) return;
 
-    try {
-      // Store the file data and options in sessionStorage for the progress page
-      const fileData = await uploadedFile.arrayBuffer();
-      const splitConfig = {
-        fileName: uploadedFile.name,
-        splitOptions,
-        pdfPages,
-        originalFileName: uploadedFile.name.replace(/\.pdf$/i, ""),
-      };
+    // Validate split configuration before proceeding
+    let isValid = false;
+    switch (splitOptions.mode) {
+      case "pages":
+      case "extract":
+        isValid = pdfPages.filter((page) => page.selected).length > 0;
+        if (!isValid) {
+          alert("Please select at least one page to split.");
+          return;
+        }
+        break;
+      case "ranges":
+        isValid = splitOptions.ranges.trim().length > 0;
+        if (!isValid) {
+          alert("Please enter page ranges to split.");
+          return;
+        }
+        break;
+      case "every":
+        isValid = splitOptions.everyNPages >= 1 && splitOptions.everyNPages <= pdfPages.length;
+        if (!isValid) {
+          alert("Please enter a valid number of pages per split.");
+          return;
+        }
+        break;
+    }
 
-      // Store configuration and file data separately as expected by progress page
-      sessionStorage.setItem("splitConfig", JSON.stringify(splitConfig));
-      sessionStorage.setItem(
-        "splitFileData",
-        JSON.stringify(Array.from(new Uint8Array(fileData)))
-      );
+    // Store split configuration and file data for the progress page
+    const splitConfig = {
+      fileName: uploadedFile.name,
+      options: splitOptions,
+      selectedPages: pdfPages.filter(p => p.selected).map(p => p.pageNumber),
+      totalPages: pdfPages.length,
+    };
 
-      // Use Next.js router to navigate to progress page
-      router.push("/tools/split/progress");
+    // Store in sessionStorage for the progress page
+    sessionStorage.setItem('splitConfig', JSON.stringify(splitConfig));
+
+    // Store file as base64 for transfer
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = reader.result as string;
+      sessionStorage.setItem('splitFileData', base64Data);
+      
+      // Redirect to progress page
+      window.location.href = '/tools/split/progress';
+    };
+    reader.readAsDataURL(uploadedFile);
+  };
+          if (splitOptions.ranges.trim()) {
+            try {
+              const ranges = splitOptions.ranges.split(",").map((range) => {
+                const trimmedRange = range.trim();
+                if (trimmedRange.includes("-")) {
+                  const [start, end] = trimmedRange
+                    .split("-")
+                    .map((n) => parseInt(n.trim()));
+                  if (isNaN(start) || isNaN(end) || start > end || start < 1 || end > pdfPages.length) {
+                    throw new Error(`Invalid range: ${trimmedRange}`);
+                  }
+                  const pages = [];
+                  for (let i = start; i <= end; i++) {
+                    pages.push(i);
+                  }
+                  return pages;
+                } else {
+                  const pageNum = parseInt(trimmedRange);
+                  if (isNaN(pageNum) || pageNum < 1 || pageNum > pdfPages.length) {
+                    throw new Error(`Invalid page number: ${trimmedRange}`);
+                  }
+                  return [pageNum];
+                }
+              });
+              pagesToSplit = ranges;
+            } catch (error) {
+              alert(`Error in page ranges: ${error instanceof Error ? error.message : 'Invalid format'}`);
+              setSplitProgress({ isProcessing: false, progress: 0, currentStep: "", speed: "" });
+              return;
+            }
+          } else {
+            alert("Please enter page ranges to split.");
+            setSplitProgress({ isProcessing: false, progress: 0, currentStep: "", speed: "" });
+            return;
+          }
+          break;
+
+        case "extract":
+          // Extract specific pages into separate files
+          const extractPages = pdfPages
+            .filter((page) => page.selected)
+            .map((page) => [page.pageNumber]);
+          if (extractPages.length === 0) {
+            alert("Please select at least one page to extract.");
+            setSplitProgress({ isProcessing: false, progress: 0, currentStep: "", speed: "" });
+            return;
+          }
+          pagesToSplit = extractPages;
+          break;
+
+        case "every":
+          // Split every N pages
+          const n = splitOptions.everyNPages;
+          if (n < 1 || n > pdfPages.length) {
+            alert("Invalid pages per split value.");
+            setSplitProgress({ isProcessing: false, progress: 0, currentStep: "", speed: "" });
+            return;
+          }
+          for (let i = 0; i < pdfPages.length; i += n) {
+            const chunk = [];
+            for (let j = i; j < Math.min(i + n, pdfPages.length); j++) {
+              chunk.push(j + 1);
+            }
+            pagesToSplit.push(chunk);
+          }
+          break;
+      }
+
+      setSplitProgress((prev) => ({
+        ...prev,
+        progress: 25,
+        currentStep: `Preparing to create ${pagesToSplit.length} split documents...`,
+        speed: "2.8 MB/s",
+      }));
+
+      const results: SplitResult[] = [];
+
+      // Create split documents with better progress tracking
+      for (let i = 0; i < pagesToSplit.length; i++) {
+        const pages = pagesToSplit[i];
+        const progressBase = 25;
+        const progressRange = 60; // 25% to 85%
+        const currentProgress = progressBase + (i * progressRange) / pagesToSplit.length;
+
+        setSplitProgress((prev) => ({
+          ...prev,
+          progress: Math.round(currentProgress),
+          currentStep: `Creating document ${i + 1} of ${pagesToSplit.length} (${pages.length} pages)...`,
+          speed: "3.5 MB/s",
+        }));
+
+        const newPdf = await PDFDocument.create();
+
+        // Copy pages to new document
+        const pageIndices = pages.map((p) => p - 1); // Convert to 0-based
+        const copiedPages = await newPdf.copyPages(originalPdf, pageIndices);
+        copiedPages.forEach((page) => newPdf.addPage(page));
+
+        // Generate PDF bytes
+        const pdfBytes = await newPdf.save();
+        const blob = new Blob([new Uint8Array(pdfBytes)], {
+          type: "application/pdf",
+        });
+        const preview = URL.createObjectURL(blob);
+
+        const fileName =
+          pages.length === 1
+            ? `page_${pages[0]}.pdf`
+            : `pages_${pages[0]}-${pages[pages.length - 1]}.pdf`;
+
+        results.push({
+          id: `split-${i}`,
+          name: fileName,
+          pages,
+          blob,
+          preview,
+          size: (blob.size / 1024 / 1024).toFixed(2) + " MB",
+        });
+
+        // Small delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      setSplitProgress((prev) => ({
+        ...prev,
+        progress: 90,
+        currentStep: "Finalizing split documents...",
+        speed: "2.8 MB/s",
+      }));
+
+      // Store results for potential redirect
+      sessionStorage.setItem('splitResults', JSON.stringify(results.map(r => ({
+        ...r,
+        preview: r.preview, // Keep the blob URL temporarily
+        blob: undefined // Remove blob from storage
+      }))));
+
+      setTimeout(() => {
+        setSplitProgress((prev) => ({
+          ...prev,
+          progress: 100,
+          currentStep: "Split complete! Ready for download.",
+          speed: "0 MB/s",
+          isProcessing: false,
+        }));
+
+        setSplitResults(results);
+      }, 800);
     } catch (error) {
-      console.error("Error preparing split:", error);
-      alert(
-        `Failed to prepare split: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      console.error("Error splitting PDF:", error);
+      setSplitProgress((prev) => ({
+        ...prev,
+        isProcessing: false,
+        currentStep: "Error occurred during split",
+        progress: 0,
+      }));
+      alert(`Failed to split PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -388,8 +578,7 @@ const SplitPage: React.FC = () => {
           {uploadedFile && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
               {/* Split Options Panel - Wider for better UX */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* max-h-screen overflow-y-auto */}
+              <div className="lg:col-span-2 space-y-6">{/* max-h-screen overflow-y-auto */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -402,11 +591,9 @@ const SplitPage: React.FC = () => {
                     </h2>
                   </div>
 
-                  <div className="p-4 space-y-4">
-                    {/* Reduced padding for more compact design */}
+                  <div className="p-4 space-y-4">{/* Reduced padding for more compact design */}
                     {/* Split Mode Selection */}
-                    <div className="space-y-3">
-                      {/* Reduced spacing */}
+                    <div className="space-y-3">{/* Reduced spacing */}
                       {[
                         {
                           mode: "pages",
@@ -587,26 +774,69 @@ const SplitPage: React.FC = () => {
                     )}
 
                     {/* Split Button */}
-                    {splitResults.length === 0 && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleSplit}
-                        disabled={
-                          (splitOptions.mode === "pages" &&
-                            pdfPages.filter((p) => p.selected).length === 0) ||
-                          (splitOptions.mode === "ranges" &&
-                            !splitOptions.ranges.trim())
-                        }
-                        className="w-full bg-gradient-to-r from-orange-600 to-pink-600 text-white py-3 rounded-xl font-bold hover:shadow-lg disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2"
-                      >
-                        <Scissors className="w-4 h-4" />
-                        <span>Split PDF</span>
-                        <Sparkles className="w-4 h-4" />
-                      </motion.button>
-                    )}
+                    {!splitProgress.isProcessing &&
+                      splitResults.length === 0 && (
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleSplit}
+                          disabled={
+                            (splitOptions.mode === "pages" &&
+                              pdfPages.filter((p) => p.selected).length ===
+                                0) ||
+                            (splitOptions.mode === "ranges" &&
+                              !splitOptions.ranges.trim())
+                          }
+                          className="w-full bg-gradient-to-r from-orange-600 to-pink-600 text-white py-3 rounded-xl font-bold hover:shadow-lg disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2"
+                        >
+                          <Scissors className="w-4 h-4" />
+                          <span>Split PDF</span>
+                          <Sparkles className="w-4 h-4" />
+                        </motion.button>
+                      )}
                   </div>
                 </motion.div>
+
+                {/* Progress */}
+                <AnimatePresence>
+                  {splitProgress.isProcessing && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+                    >
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 text-white">
+                        <h3 className="text-base font-bold flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Splitting PDF
+                        </h3>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                          <motion.div
+                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${splitProgress.progress}%` }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">
+                            {splitProgress.currentStep}
+                          </span>
+                          <span className="font-bold text-blue-600 text-sm">
+                            {splitProgress.progress}%
+                          </span>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Speed: {splitProgress.speed}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Results */}
                 <AnimatePresence>

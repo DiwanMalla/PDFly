@@ -51,6 +51,8 @@ interface SplitOptions {
   extractPages: number[];
 }
 
+
+
 const SplitPage: React.FC = () => {
   const router = useRouter();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -228,25 +230,18 @@ const SplitPage: React.FC = () => {
         fileName: uploadedFile.name,
         splitOptions,
         pdfPages,
-        originalFileName: uploadedFile.name.replace(/\.pdf$/i, ""),
+        originalFileName: uploadedFile.name.replace(/\.pdf$/i, '')
       };
 
       // Store configuration and file data separately as expected by progress page
-      sessionStorage.setItem("splitConfig", JSON.stringify(splitConfig));
-      sessionStorage.setItem(
-        "splitFileData",
-        JSON.stringify(Array.from(new Uint8Array(fileData)))
-      );
-
-      // Use Next.js router to navigate to progress page
-      router.push("/tools/split/progress");
+      sessionStorage.setItem('splitConfig', JSON.stringify(splitConfig));
+      sessionStorage.setItem('splitFileData', JSON.stringify(Array.from(new Uint8Array(fileData))));
+      
+      // Redirect to progress page
+      window.location.href = '/tools/split/progress';
     } catch (error) {
       console.error("Error preparing split:", error);
-      alert(
-        `Failed to prepare split: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      alert(`Failed to prepare split: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -388,8 +383,7 @@ const SplitPage: React.FC = () => {
           {uploadedFile && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
               {/* Split Options Panel - Wider for better UX */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* max-h-screen overflow-y-auto */}
+              <div className="lg:col-span-2 space-y-6">{/* max-h-screen overflow-y-auto */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -402,11 +396,9 @@ const SplitPage: React.FC = () => {
                     </h2>
                   </div>
 
-                  <div className="p-4 space-y-4">
-                    {/* Reduced padding for more compact design */}
+                  <div className="p-4 space-y-4">{/* Reduced padding for more compact design */}
                     {/* Split Mode Selection */}
-                    <div className="space-y-3">
-                      {/* Reduced spacing */}
+                    <div className="space-y-3">{/* Reduced spacing */}
                       {[
                         {
                           mode: "pages",
@@ -594,7 +586,8 @@ const SplitPage: React.FC = () => {
                         onClick={handleSplit}
                         disabled={
                           (splitOptions.mode === "pages" &&
-                            pdfPages.filter((p) => p.selected).length === 0) ||
+                            pdfPages.filter((p) => p.selected).length ===
+                              0) ||
                           (splitOptions.mode === "ranges" &&
                             !splitOptions.ranges.trim())
                         }
