@@ -70,43 +70,16 @@ const SplitPage: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset and update page selections based on split mode and input
+  // Reset page selections when split mode changes
   useEffect(() => {
     if (splitOptions.mode === "pages" || splitOptions.mode === "extract") {
-      // Keep manual selections for these modes
+      // Keep selections for these modes
       return;
-    } else if (splitOptions.mode === "ranges") {
-      // Select pages based on ranges input
-      const ranges = splitOptions.ranges
-        .split(",")
-        .map((r) => r.trim())
-        .filter(Boolean);
-  const selectedPages: number[] = [];
-      ranges.forEach((r) => {
-        if (r.includes("-")) {
-          const [start, end] = r.split("-").map((n) => parseInt(n.trim()));
-          if (!isNaN(start) && !isNaN(end)) {
-            for (let i = start; i <= end; i++) selectedPages.push(i);
-          }
-        } else {
-          const num = parseInt(r);
-          if (!isNaN(num)) selectedPages.push(num);
-        }
-      });
-      setPdfPages((prev) =>
-        prev.map((page) => ({
-          ...page,
-          selected: selectedPages.includes(page.pageNumber),
-        }))
-      );
-    } else if (splitOptions.mode === "every") {
-      // Select all pages for 'every' mode
-      setPdfPages((prev) => prev.map((page) => ({ ...page, selected: true })));
     } else {
       // Clear selections for other modes
       setPdfPages((prev) => prev.map((page) => ({ ...page, selected: false })));
     }
-  }, [splitOptions.mode, splitOptions.ranges, splitOptions.everyNPages]);
+  }, [splitOptions.mode]);
 
   // Reset results when options change significantly
   useEffect(() => {
@@ -522,39 +495,14 @@ const SplitPage: React.FC = () => {
                         <input
                           type="text"
                           placeholder="e.g., 1-3,5-7,9"
-                          className="w-full p-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-sm placeholder:text-green-500 placeholder:font-semibold text-green-700"
+                          className="w-full p-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-sm placeholder:text-green-500 placeholder:font-semibold"
                           value={splitOptions.ranges}
-                          onChange={(e) => {
-                            // Only allow valid page numbers/ranges
-                            const val = e.target.value.replace(/[^0-9,-]/g, "");
-                            const maxPage = pdfPages.length;
-                            // Validate each range
-                            const validRanges = val
-                              .split(",")
-                              .map((r) => r.trim())
-                              .filter(Boolean)
-                              .map((r) => {
-                                if (r.includes("-")) {
-                                  let [start, end] = r
-                                    .split("-")
-                                    .map((n) => parseInt(n.trim()));
-                                  start = Math.max(1, Math.min(start, maxPage));
-                                  end = Math.max(1, Math.min(end, maxPage));
-                                  return `${start}-${end}`;
-                                } else {
-                                  const num = Math.max(
-                                    1,
-                                    Math.min(parseInt(r), maxPage)
-                                  );
-                                  return isNaN(num) ? "" : `${num}`;
-                                }
-                              })
-                              .filter(Boolean);
+                          onChange={(e) =>
                             setSplitOptions((prev) => ({
                               ...prev,
-                              ranges: validRanges.join(","),
-                            }));
-                          }}
+                              ranges: e.target.value,
+                            }))
+                          }
                         />
                         <p className="text-xs text-green-600 mt-1 flex items-center">
                           <Clock className="w-3 h-3 mr-1" />
@@ -590,7 +538,7 @@ const SplitPage: React.FC = () => {
                             type="number"
                             min="1"
                             max={pdfPages.length}
-                            className="flex-1 p-2 border border-purple-300 rounded-lg text-center focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white font-medium text-sm text-purple-700"
+                            className="flex-1 p-2 border border-purple-300 rounded-lg text-center focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white font-medium text-sm"
                             value={splitOptions.everyNPages}
                             onChange={(e) =>
                               setSplitOptions((prev) => ({
@@ -738,30 +686,16 @@ const SplitPage: React.FC = () => {
                         <div className="text-sm bg-white/20 px-3 py-1 rounded-full">
                           {/* Show selected count for 'pages' and 'extract', else show calculated for 'ranges' and 'every' */}
                           {(() => {
-                            if (
-                              splitOptions.mode === "pages" ||
-                              splitOptions.mode === "extract"
-                            ) {
-                              return `${
-                                pdfPages.filter((p) => p.selected).length
-                              } of ${pdfPages.length} selected`;
-                            } else if (
-                              splitOptions.mode === "ranges" &&
-                              splitOptions.ranges.trim()
-                            ) {
+                            if (splitOptions.mode === "pages" || splitOptions.mode === "extract") {
+                              return `${pdfPages.filter((p) => p.selected).length} of ${pdfPages.length} selected`;
+                            } else if (splitOptions.mode === "ranges" && splitOptions.ranges.trim()) {
                               // Calculate total pages from ranges string
-                              const ranges = splitOptions.ranges
-                                .split(",")
-                                .map((r) => r.trim())
-                                .filter(Boolean);
+                              const ranges = splitOptions.ranges.split(",").map(r => r.trim()).filter(Boolean);
                               let count = 0;
-                              ranges.forEach((r) => {
+                              ranges.forEach(r => {
                                 if (r.includes("-")) {
-                                  const [start, end] = r
-                                    .split("-")
-                                    .map((n) => parseInt(n.trim()));
-                                  if (!isNaN(start) && !isNaN(end))
-                                    count += Math.max(0, end - start + 1);
+                                  const [start, end] = r.split("-").map(n => parseInt(n.trim()));
+                                  if (!isNaN(start) && !isNaN(end)) count += Math.max(0, end - start + 1);
                                 } else {
                                   if (!isNaN(parseInt(r))) count += 1;
                                 }
@@ -827,158 +761,53 @@ const SplitPage: React.FC = () => {
                       </div>
                     ) : pdfPages.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[600px] overflow-y-auto pr-2">
-                        {(() => {
-                          if (
-                            splitOptions.mode === "every" &&
-                            splitOptions.everyNPages > 0
-                          ) {
-                            const groupSize = splitOptions.everyNPages;
-                            const colors = [
-                              "bg-purple-50 border-purple-200",
-                              "bg-indigo-50 border-indigo-200",
-                              "bg-pink-50 border-pink-200",
-                              "bg-blue-50 border-blue-200",
-                              "bg-orange-50 border-orange-200",
-                            ];
-                            return pdfPages.map((page, index) => {
-                              const groupIdx = Math.floor(index / groupSize);
-                              const colorClass =
-                                colors[groupIdx % colors.length];
-                              return (
-                                <motion.div
-                                  key={page.id}
-                                  initial={{ opacity: 0, scale: 0.8 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  transition={{ delay: index * 0.05 }}
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  className={`relative cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-300 ${colorClass} ${
-                                    page.selected
-                                      ? "border-orange-500 ring-4 ring-orange-200 shadow-lg"
-                                      : "hover:border-orange-300 hover:shadow-md"
-                                  }`}
-                                >
-                                  <div className="aspect-[3/4] relative overflow-hidden">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                      src={page.thumbnail}
-                                      alt={`Page ${page.pageNumber}`}
-                                      className="w-full h-full object-contain transition-transform duration-300 hover:scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                                  </div>
-                                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                                    <div className="text-white text-sm font-bold text-center bg-black/50 backdrop-blur-sm rounded-lg py-1">
-                                      Page {page.pageNumber}
-                                    </div>
-                                  </div>
-                                  <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2 py-1 rounded-full">
-                                    {page.pageNumber}
-                                  </div>
-                                  <div className="absolute top-2 right-2 bg-white/80 text-purple-700 rounded-full px-2 py-1 text-xs font-bold shadow">
-                                    Group {groupIdx + 1}
-                                  </div>
-                                  {page.selected && (
-                                    <motion.div
-                                      initial={{ scale: 0 }}
-                                      animate={{ scale: 1 }}
-                                      className="absolute top-8 right-2 bg-orange-600 text-white rounded-full p-2 shadow-lg"
-                                    >
-                                      <Check className="w-3 h-3" />
-                                    </motion.div>
-                                  )}
-                                </motion.div>
-                              );
-                            });
-                          } else {
-                            return pdfPages.map((page, index) => (
+                        {pdfPages.map((page, index) => (
+                          <motion.div
+                            key={page.id}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: index * 0.05 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`relative cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
+                              page.selected
+                                ? "border-orange-500 ring-4 ring-orange-200 shadow-lg"
+                                : "border-gray-200 hover:border-orange-300 hover:shadow-md"
+                            }`}
+                            onClick={() =>
+                              (splitOptions.mode === "pages" ||
+                                splitOptions.mode === "extract") &&
+                              togglePageSelection(page.id)
+                            }
+                          >
+                            <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={page.thumbnail}
+                                alt={`Page ${page.pageNumber}`}
+                                className="w-full h-full object-contain transition-transform duration-300 hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                              <div className="text-white text-sm font-bold text-center bg-black/50 backdrop-blur-sm rounded-lg py-1">
+                                Page {page.pageNumber}
+                              </div>
+                            </div>
+                            {page.selected && (
                               <motion.div
-                                key={page.id}
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: index * 0.05 }}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className={`relative cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
-                                  page.selected
-                                    ? "border-orange-500 ring-4 ring-orange-200 shadow-lg"
-                                    : "border-gray-200 hover:border-orange-300 hover:shadow-md"
-                                }`}
-                                onClick={() => {
-                                  if (
-                                    splitOptions.mode === "pages" ||
-                                    splitOptions.mode === "extract"
-                                  ) {
-                                    togglePageSelection(page.id);
-                                  } else if (splitOptions.mode === "ranges") {
-                                    // Update range input and selection
-                                    const maxPage = pdfPages.length;
-                                    const currentRange = splitOptions.ranges
-                                      .split(",")
-                                      .map((r) => r.trim())
-                                      .find((r) => r.includes("-"));
-                                    let start = 1,
-                                      end = 1;
-                                    if (currentRange) {
-                                      [start, end] = currentRange
-                                        .split("-")
-                                        .map((n) => parseInt(n.trim()));
-                                      if (isNaN(start) || isNaN(end)) {
-                                        start = end = page.pageNumber;
-                                      }
-                                    } else {
-                                      start = end = page.pageNumber;
-                                    }
-                                    if (page.pageNumber < start) {
-                                      start = page.pageNumber;
-                                    } else if (page.pageNumber > end) {
-                                      end = page.pageNumber;
-                                    } else {
-                                      // If clicked inside range, shrink to start-page
-                                      end = page.pageNumber;
-                                    }
-                                    start = Math.max(
-                                      1,
-                                      Math.min(start, maxPage)
-                                    );
-                                    end = Math.max(1, Math.min(end, maxPage));
-                                    setSplitOptions((prev) => ({
-                                      ...prev,
-                                      ranges: `${start}-${end}`,
-                                    }));
-                                  }
-                                }}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="absolute top-2 right-2 bg-orange-600 text-white rounded-full p-2 shadow-lg"
                               >
-                                <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={page.thumbnail}
-                                    alt={`Page ${page.pageNumber}`}
-                                    className="w-full h-full object-contain transition-transform duration-300 hover:scale-110"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                                </div>
-                                <div className="absolute bottom-0 left-0 right-0 p-3">
-                                  <div className="text-white text-sm font-bold text-center bg-black/50 backdrop-blur-sm rounded-lg py-1">
-                                    Page {page.pageNumber}
-                                  </div>
-                                </div>
-                                {page.selected && (
-                                  <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="absolute top-2 right-2 bg-orange-600 text-white rounded-full p-2 shadow-lg"
-                                  >
-                                    <Check className="w-3 h-3" />
-                                  </motion.div>
-                                )}
-                                <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2 py-1 rounded-full">
-                                  {page.pageNumber}
-                                </div>
+                                <Check className="w-3 h-3" />
                               </motion.div>
-                            ));
-                          }
-                        })()}
+                            )}
+                            <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2 py-1 rounded-full">
+                              {page.pageNumber}
+                            </div>
+                          </motion.div>
+                        ))}
                       </div>
                     ) : (
                       <div className="text-center py-16">

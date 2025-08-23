@@ -77,14 +77,11 @@ const SplitPage: React.FC = () => {
       return;
     } else if (splitOptions.mode === "ranges") {
       // Select pages based on ranges input
-      const ranges = splitOptions.ranges
-        .split(",")
-        .map((r) => r.trim())
-        .filter(Boolean);
-  const selectedPages: number[] = [];
-      ranges.forEach((r) => {
+      const ranges = splitOptions.ranges.split(",").map(r => r.trim()).filter(Boolean);
+      let selectedPages: number[] = [];
+      ranges.forEach(r => {
         if (r.includes("-")) {
-          const [start, end] = r.split("-").map((n) => parseInt(n.trim()));
+          const [start, end] = r.split("-").map(n => parseInt(n.trim()));
           if (!isNaN(start) && !isNaN(end)) {
             for (let i = start; i <= end; i++) selectedPages.push(i);
           }
@@ -93,12 +90,7 @@ const SplitPage: React.FC = () => {
           if (!isNaN(num)) selectedPages.push(num);
         }
       });
-      setPdfPages((prev) =>
-        prev.map((page) => ({
-          ...page,
-          selected: selectedPages.includes(page.pageNumber),
-        }))
-      );
+      setPdfPages((prev) => prev.map((page) => ({ ...page, selected: selectedPages.includes(page.pageNumber) })));
     } else if (splitOptions.mode === "every") {
       // Select all pages for 'every' mode
       setPdfPages((prev) => prev.map((page) => ({ ...page, selected: true })));
@@ -529,27 +521,17 @@ const SplitPage: React.FC = () => {
                             const val = e.target.value.replace(/[^0-9,-]/g, "");
                             const maxPage = pdfPages.length;
                             // Validate each range
-                            const validRanges = val
-                              .split(",")
-                              .map((r) => r.trim())
-                              .filter(Boolean)
-                              .map((r) => {
-                                if (r.includes("-")) {
-                                  let [start, end] = r
-                                    .split("-")
-                                    .map((n) => parseInt(n.trim()));
-                                  start = Math.max(1, Math.min(start, maxPage));
-                                  end = Math.max(1, Math.min(end, maxPage));
-                                  return `${start}-${end}`;
-                                } else {
-                                  const num = Math.max(
-                                    1,
-                                    Math.min(parseInt(r), maxPage)
-                                  );
-                                  return isNaN(num) ? "" : `${num}`;
-                                }
-                              })
-                              .filter(Boolean);
+                            const validRanges = val.split(",").map(r => r.trim()).filter(Boolean).map(r => {
+                              if (r.includes("-")) {
+                                let [start, end] = r.split("-").map(n => parseInt(n.trim()));
+                                start = Math.max(1, Math.min(start, maxPage));
+                                end = Math.max(1, Math.min(end, maxPage));
+                                return `${start}-${end}`;
+                              } else {
+                                const num = Math.max(1, Math.min(parseInt(r), maxPage));
+                                return isNaN(num) ? "" : `${num}`;
+                              }
+                            }).filter(Boolean);
                             setSplitOptions((prev) => ({
                               ...prev,
                               ranges: validRanges.join(","),
@@ -738,30 +720,16 @@ const SplitPage: React.FC = () => {
                         <div className="text-sm bg-white/20 px-3 py-1 rounded-full">
                           {/* Show selected count for 'pages' and 'extract', else show calculated for 'ranges' and 'every' */}
                           {(() => {
-                            if (
-                              splitOptions.mode === "pages" ||
-                              splitOptions.mode === "extract"
-                            ) {
-                              return `${
-                                pdfPages.filter((p) => p.selected).length
-                              } of ${pdfPages.length} selected`;
-                            } else if (
-                              splitOptions.mode === "ranges" &&
-                              splitOptions.ranges.trim()
-                            ) {
+                            if (splitOptions.mode === "pages" || splitOptions.mode === "extract") {
+                              return `${pdfPages.filter((p) => p.selected).length} of ${pdfPages.length} selected`;
+                            } else if (splitOptions.mode === "ranges" && splitOptions.ranges.trim()) {
                               // Calculate total pages from ranges string
-                              const ranges = splitOptions.ranges
-                                .split(",")
-                                .map((r) => r.trim())
-                                .filter(Boolean);
+                              const ranges = splitOptions.ranges.split(",").map(r => r.trim()).filter(Boolean);
                               let count = 0;
-                              ranges.forEach((r) => {
+                              ranges.forEach(r => {
                                 if (r.includes("-")) {
-                                  const [start, end] = r
-                                    .split("-")
-                                    .map((n) => parseInt(n.trim()));
-                                  if (!isNaN(start) && !isNaN(end))
-                                    count += Math.max(0, end - start + 1);
+                                  const [start, end] = r.split("-").map(n => parseInt(n.trim()));
+                                  if (!isNaN(start) && !isNaN(end)) count += Math.max(0, end - start + 1);
                                 } else {
                                   if (!isNaN(parseInt(r))) count += 1;
                                 }
@@ -828,10 +796,7 @@ const SplitPage: React.FC = () => {
                     ) : pdfPages.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[600px] overflow-y-auto pr-2">
                         {(() => {
-                          if (
-                            splitOptions.mode === "every" &&
-                            splitOptions.everyNPages > 0
-                          ) {
+                          if (splitOptions.mode === "every" && splitOptions.everyNPages > 0) {
                             const groupSize = splitOptions.everyNPages;
                             const colors = [
                               "bg-purple-50 border-purple-200",
@@ -842,8 +807,7 @@ const SplitPage: React.FC = () => {
                             ];
                             return pdfPages.map((page, index) => {
                               const groupIdx = Math.floor(index / groupSize);
-                              const colorClass =
-                                colors[groupIdx % colors.length];
+                              const colorClass = colors[groupIdx % colors.length];
                               return (
                                 <motion.div
                                   key={page.id}
@@ -905,27 +869,16 @@ const SplitPage: React.FC = () => {
                                     : "border-gray-200 hover:border-orange-300 hover:shadow-md"
                                 }`}
                                 onClick={() => {
-                                  if (
-                                    splitOptions.mode === "pages" ||
-                                    splitOptions.mode === "extract"
-                                  ) {
+                                  if (splitOptions.mode === "pages" || splitOptions.mode === "extract") {
                                     togglePageSelection(page.id);
                                   } else if (splitOptions.mode === "ranges") {
                                     // Update range input and selection
                                     const maxPage = pdfPages.length;
-                                    const currentRange = splitOptions.ranges
-                                      .split(",")
-                                      .map((r) => r.trim())
-                                      .find((r) => r.includes("-"));
-                                    let start = 1,
-                                      end = 1;
+                                    const currentRange = splitOptions.ranges.split(",").map(r => r.trim()).find(r => r.includes("-"));
+                                    let start = 1, end = 1;
                                     if (currentRange) {
-                                      [start, end] = currentRange
-                                        .split("-")
-                                        .map((n) => parseInt(n.trim()));
-                                      if (isNaN(start) || isNaN(end)) {
-                                        start = end = page.pageNumber;
-                                      }
+                                      [start, end] = currentRange.split("-").map(n => parseInt(n.trim()));
+                                      if (isNaN(start) || isNaN(end)) { start = end = page.pageNumber; }
                                     } else {
                                       start = end = page.pageNumber;
                                     }
@@ -937,10 +890,7 @@ const SplitPage: React.FC = () => {
                                       // If clicked inside range, shrink to start-page
                                       end = page.pageNumber;
                                     }
-                                    start = Math.max(
-                                      1,
-                                      Math.min(start, maxPage)
-                                    );
+                                    start = Math.max(1, Math.min(start, maxPage));
                                     end = Math.max(1, Math.min(end, maxPage));
                                     setSplitOptions((prev) => ({
                                       ...prev,

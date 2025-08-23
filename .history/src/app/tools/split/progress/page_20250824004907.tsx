@@ -63,9 +63,7 @@ const SplitProgressPage: React.FC = () => {
         if (fileBlobOrArrayBuffer instanceof Blob) {
           fileBlob = fileBlobOrArrayBuffer;
         } else {
-          fileBlob = new Blob([fileBlobOrArrayBuffer], {
-            type: "application/pdf",
-          });
+          fileBlob = new Blob([fileBlobOrArrayBuffer], { type: "application/pdf" });
         }
         const file = new File([fileBlob], splitConfig.fileName, {
           type: "application/pdf",

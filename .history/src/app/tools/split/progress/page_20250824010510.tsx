@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getPDFFile } from "@/lib/indexeddb-utils";
+import { getPDFFile, savePDFFile } from "@/lib/indexeddb-utils";
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import {
@@ -44,6 +44,7 @@ const SplitProgressPage: React.FC = () => {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
+  const splitFileKeys: string[] = [];
     const processSplit = async () => {
       try {
         // Get split configuration from sessionStorage
@@ -63,11 +64,10 @@ const SplitProgressPage: React.FC = () => {
         if (fileBlobOrArrayBuffer instanceof Blob) {
           fileBlob = fileBlobOrArrayBuffer;
         } else {
-          fileBlob = new Blob([fileBlobOrArrayBuffer], {
-            type: "application/pdf",
-          });
+          fileBlob = new Blob([fileBlobOrArrayBuffer], { type: "application/pdf" });
         }
-        const file = new File([fileBlob], splitConfig.fileName, {
+        for (let i = 0; i < pagesToSplit.length; i++) {
+          const pages = pagesToSplit[i];
           type: "application/pdf",
         });
 
@@ -97,235 +97,99 @@ const SplitProgressPage: React.FC = () => {
           case "pages":
             const selectedPages = splitConfig.pdfPages
               .filter(
-                (page: { selected: boolean; pageNumber: number }) =>
-                  page.selected
-              )
-              .map(
-                (page: { selected: boolean; pageNumber: number }) =>
-                  page.pageNumber
-              );
-            if (selectedPages.length === 0) {
-              throw new Error("No pages selected for splitting");
-            }
-            pagesToSplit = selectedPages.map((page: number) => [page]);
-            break;
-
-          case "ranges":
-            if (splitConfig.splitOptions.ranges.trim()) {
-              const ranges = splitConfig.splitOptions.ranges
-                .split(",")
-                .map((range: string) => {
-                  const trimmedRange = range.trim();
-                  if (trimmedRange.includes("-")) {
-                    const [start, end] = trimmedRange
-                      .split("-")
-                      .map((n: string) => parseInt(n.trim()));
-                    const pages = [];
-                    for (let i = start; i <= end; i++) {
-                      pages.push(i);
+                useEffect(() => {
+                  const processSplit = async () => {
+                    try {
+                      const splitFileKeys: string[] = [];
+                      const splitConfigStr = sessionStorage.getItem("splitConfig");
+                      if (!splitConfigStr) throw new Error("Split configuration not found");
+                      const splitConfig = JSON.parse(splitConfigStr);
+                      const fileBlobOrArrayBuffer = await getPDFFile(splitConfig.fileKey);
+                      if (!fileBlobOrArrayBuffer) throw new Error("PDF file not found in IndexedDB");
+                      let fileBlob: Blob;
+                      if (fileBlobOrArrayBuffer instanceof Blob) fileBlob = fileBlobOrArrayBuffer;
+                      else fileBlob = new Blob([fileBlobOrArrayBuffer], { type: "application/pdf" });
+                      setSplitProgress({ isProcessing: true, progress: 10, currentStep: "Loading PDF document...", speed: "1.2 MB/s" });
+                      const { PDFDocument } = await import("pdf-lib");
+                      const arrayBuffer = await fileBlob.arrayBuffer();
+                      const originalPdf = await PDFDocument.load(arrayBuffer);
+                      let pagesToSplit: number[][] = [];
+                      setSplitProgress((prev) => ({ ...prev, progress: 20, currentStep: "Analyzing split configuration...", speed: "2.1 MB/s" }));
+                      switch (splitConfig.splitOptions.mode) {
+                        case "pages": {
+                          const selectedPages = splitConfig.pdfPages.filter((page: { selected: boolean; pageNumber: number }) => page.selected).map((page: { selected: boolean; pageNumber: number }) => page.pageNumber);
+                          if (selectedPages.length === 0) throw new Error("No pages selected for splitting");
+                          pagesToSplit = selectedPages.map((page: number) => [page]);
+                          break;
+                        }
+                        case "ranges": {
+                          if (splitConfig.splitOptions.ranges.trim()) {
+                            const ranges = splitConfig.splitOptions.ranges.split(",").map((range: string) => {
+                              const trimmedRange = range.trim();
+                              if (trimmedRange.includes("-")) {
+                                const [start, end] = trimmedRange.split("-").map((n: string) => parseInt(n.trim()));
+                                const pages = [];
+                                for (let i = start; i <= end; i++) pages.push(i);
+                                return pages;
+                              } else {
+                                return [parseInt(trimmedRange)];
+                              }
+                            });
+                            pagesToSplit = ranges;
+                          } else throw new Error("No page ranges specified");
+                          break;
+                        }
+                        case "extract": {
+                          const extractPages = splitConfig.pdfPages.filter((page: { selected: boolean; pageNumber: number }) => page.selected).map((page: { selected: boolean; pageNumber: number }) => page.pageNumber);
+                          if (extractPages.length === 0) throw new Error("No pages selected for extraction");
+                          pagesToSplit = extractPages.map((page: number) => [page]);
+                          break;
+                        }
+                        case "every": {
+                          const n = splitConfig.splitOptions.everyNPages;
+                          const totalPages = splitConfig.pdfPages.length;
+                          for (let i = 0; i < totalPages; i += n) {
+                            const chunk = [];
+                            for (let j = i; j < Math.min(i + n, totalPages); j++) chunk.push(j + 1);
+                            pagesToSplit.push(chunk);
+                          }
+                          break;
+                        }
+                      }
+                      if (pagesToSplit.length === 0) throw new Error("No valid pages to split");
+                      const results: SplitResult[] = [];
+                      setSplitProgress((prev) => ({ ...prev, progress: 30, currentStep: `Creating ${pagesToSplit.length} split documents...`, speed: "2.8 MB/s" }));
+                      for (let i = 0; i < pagesToSplit.length; i++) {
+                        const pages = pagesToSplit[i];
+                        setSplitProgress((prev) => ({ ...prev, progress: 30 + (i * 50) / pagesToSplit.length, currentStep: `Processing split ${i + 1} of ${pagesToSplit.length}...`, speed: "3.2 MB/s" }));
+                        const newPdf = await PDFDocument.create();
+                        const pageIndices = pages.map((p) => p - 1);
+                        const copiedPages = await newPdf.copyPages(originalPdf, pageIndices);
+                        copiedPages.forEach((page) => newPdf.addPage(page));
+                        const pdfBytes = await newPdf.save();
+                        const resultBlob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+                        const preview = URL.createObjectURL(resultBlob);
+                        const fileName = pages.length === 1 ? `${splitConfig.fileName.replace(".pdf", "")}_page_${pages[0]}.pdf` : `${splitConfig.fileName.replace(".pdf", "")}_pages_${pages[0]}-${pages[pages.length - 1]}.pdf`;
+                        const splitKey = `splitFile-${Date.now()}-${i}-${fileName}`;
+                        await savePDFFile(splitKey, resultBlob);
+                        splitFileKeys.push(splitKey);
+                        results.push({ id: `split-${i}`, name: fileName, pages, blob: resultBlob, preview, size: (resultBlob.size / 1024 / 1024).toFixed(2) + " MB" });
+                      }
+                      setSplitProgress((prev) => ({ ...prev, progress: 90, currentStep: "Finalizing split documents...", speed: "2.1 MB/s" }));
+                      setTimeout(() => {
+                        setSplitProgress((prev) => ({ ...prev, progress: 100, currentStep: "Split complete!", speed: "0 MB/s", isProcessing: false }));
+                        setSplitResults(results);
+                        sessionStorage.setItem("splitFileKeys", JSON.stringify(splitFileKeys));
+                        sessionStorage.removeItem("splitConfig");
+                      }, 500);
+                    } catch (error) {
+                      console.error("Error splitting PDF:", error);
+                      setError(error instanceof Error ? error.message : "An error occurred while splitting the PDF");
+                      setSplitProgress((prev) => ({ ...prev, isProcessing: false, currentStep: "Error occurred", speed: "0 MB/s" }));
                     }
-                    return pages;
-                  } else {
-                    return [parseInt(trimmedRange)];
-                  }
-                });
-              pagesToSplit = ranges;
-            } else {
-              throw new Error("No page ranges specified");
-            }
-            break;
-
-          case "extract":
-            const extractPages = splitConfig.pdfPages
-              .filter(
-                (page: { selected: boolean; pageNumber: number }) =>
-                  page.selected
-              )
-              .map(
-                (page: { selected: boolean; pageNumber: number }) =>
-                  page.pageNumber
-              );
-            if (extractPages.length === 0) {
-              throw new Error("No pages selected for extraction");
-            }
-            pagesToSplit = extractPages.map((page: number) => [page]);
-            break;
-
-          case "every":
-            const n = splitConfig.splitOptions.everyNPages;
-            const totalPages = splitConfig.pdfPages.length;
-            for (let i = 0; i < totalPages; i += n) {
-              const chunk = [];
-              for (let j = i; j < Math.min(i + n, totalPages); j++) {
-                chunk.push(j + 1);
-              }
-              pagesToSplit.push(chunk);
-            }
-            break;
-        }
-
-        if (pagesToSplit.length === 0) {
-          throw new Error("No valid pages to split");
-        }
-
-        const results: SplitResult[] = [];
-
-        setSplitProgress((prev) => ({
-          ...prev,
-          progress: 30,
-          currentStep: `Creating ${pagesToSplit.length} split documents...`,
-          speed: "2.8 MB/s",
-        }));
-
-        // Create split documents
-        for (let i = 0; i < pagesToSplit.length; i++) {
-          const pages = pagesToSplit[i];
-
-          setSplitProgress((prev) => ({
-            ...prev,
-            progress: 30 + (i * 50) / pagesToSplit.length,
-            currentStep: `Processing split ${i + 1} of ${
-              pagesToSplit.length
-            }...`,
-            speed: "3.2 MB/s",
-          }));
-
-          const newPdf = await PDFDocument.create();
-
-          // Copy pages to new document
-          const pageIndices = pages.map((p) => p - 1); // Convert to 0-based
-          const copiedPages = await newPdf.copyPages(originalPdf, pageIndices);
-          copiedPages.forEach((page) => newPdf.addPage(page));
-
-          // Generate PDF bytes
-          const pdfBytes = await newPdf.save();
-          const resultBlob = new Blob([new Uint8Array(pdfBytes)], {
-            type: "application/pdf",
-          });
-          const preview = URL.createObjectURL(resultBlob);
-
-          const fileName =
-            pages.length === 1
-              ? `${splitConfig.fileName.replace(".pdf", "")}_page_${
-                  pages[0]
-                }.pdf`
-              : `${splitConfig.fileName.replace(".pdf", "")}_pages_${
-                  pages[0]
-                }-${pages[pages.length - 1]}.pdf`;
-
-          results.push({
-            id: `split-${i}`,
-            name: fileName,
-            pages,
-            blob: resultBlob,
-            preview,
-            size: (resultBlob.size / 1024 / 1024).toFixed(2) + " MB",
-          });
-        }
-
-        setSplitProgress((prev) => ({
-          ...prev,
-          progress: 90,
-          currentStep: "Finalizing split documents...",
-          speed: "2.1 MB/s",
-        }));
-
-        setTimeout(() => {
-          setSplitProgress((prev) => ({
-            ...prev,
-            progress: 100,
-            currentStep: "Split complete!",
-            speed: "0 MB/s",
-            isProcessing: false,
-          }));
-
-          setSplitResults(results);
-
-          // Clean up sessionStorage
-          sessionStorage.removeItem("splitConfig");
-          // Optionally, clean up the file from IndexedDB after processing
-          // import { deletePDFFile } from "@/lib/indexeddb-utils"; and call deletePDFFile(splitConfig.fileKey);
-        }, 500);
-      } catch (error) {
-        console.error("Error splitting PDF:", error);
-        setError(
-          error instanceof Error
-            ? error.message
-            : "An error occurred while splitting the PDF"
-        );
-        setSplitProgress((prev) => ({
-          ...prev,
-          isProcessing: false,
-          currentStep: "Error occurred",
-          speed: "0 MB/s",
-        }));
-      }
-    };
-
-    processSplit();
-  }, []);
-
-  const downloadFile = (result: SplitResult) => {
-    const link = document.createElement("a");
-    link.href = result.preview;
-    link.download = result.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const downloadAllFiles = () => {
-    splitResults.forEach((result, index) => {
-      setTimeout(() => downloadFile(result), index * 300);
-    });
-  };
-
-  const previewFile = (result: SplitResult) => {
-    window.open(result.preview, "_blank");
-  };
-
-  const startNewSplit = () => {
-    window.location.href = "/tools/split";
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <Navigation />
-
-      <div className="pt-20">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 text-white"
-        >
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="flex items-center space-x-4 mb-6">
-              <button
-                onClick={() => window.history.back()}
-                className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center space-x-4">
-                <div className="p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-                  <Scissors className="w-8 h-8" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold mb-2">
-                    {splitProgress.isProcessing
-                      ? "Splitting PDF..."
-                      : "Split Complete!"}
-                  </h1>
-                  <p className="text-xl text-white/90">
-                    {splitProgress.isProcessing
-                      ? "Processing your PDF split request"
-                      : `Successfully created ${splitResults.length} split documents`}
-                  </p>
-                </div>
-              </div>
-            </div>
+                  };
+                  processSplit();
+                }, []);
           </div>
         </motion.div>
 

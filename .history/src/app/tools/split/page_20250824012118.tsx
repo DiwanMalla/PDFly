@@ -81,7 +81,7 @@ const SplitPage: React.FC = () => {
         .split(",")
         .map((r) => r.trim())
         .filter(Boolean);
-  const selectedPages: number[] = [];
+      let selectedPages: number[] = [];
       ranges.forEach((r) => {
         if (r.includes("-")) {
           const [start, end] = r.split("-").map((n) => parseInt(n.trim()));

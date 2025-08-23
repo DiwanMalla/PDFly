@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getPDFFile } from "@/lib/indexeddb-utils";
+import { getPDFFile, savePDFFile } from "@/lib/indexeddb-utils";
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import {
@@ -44,6 +44,7 @@ const SplitProgressPage: React.FC = () => {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
+  const splitFileKeys: string[] = [];
     const processSplit = async () => {
       try {
         // Get split configuration from sessionStorage
@@ -63,11 +64,10 @@ const SplitProgressPage: React.FC = () => {
         if (fileBlobOrArrayBuffer instanceof Blob) {
           fileBlob = fileBlobOrArrayBuffer;
         } else {
-          fileBlob = new Blob([fileBlobOrArrayBuffer], {
-            type: "application/pdf",
-          });
+          fileBlob = new Blob([fileBlobOrArrayBuffer], { type: "application/pdf" });
         }
-        const file = new File([fileBlob], splitConfig.fileName, {
+        for (let i = 0; i < pagesToSplit.length; i++) {
+          const pages = pagesToSplit[i];
           type: "application/pdf",
         });
 
