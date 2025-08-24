@@ -41,3 +41,78 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Project Documentation (Internal Use Only - Do Not Push)
+PROJECT_STATUS.md
+project-status.md
+status-report.md
+internal-docs/
+docs/internal/
+dev-notes.md
+todo.md
+Project-Proposal.md
+proposal.md
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# History and backup files
+.history/
+*.backup
+*.bak
+
+# Local development files
+local/
+scratch/
+temp/
+tmp/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+prisma/dev.db
+prisma/dev.db-journal
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Testing
+/coverage
+.nyc_output/
+junit.xml
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Dependency directories
+jspm_packages/
+
+# PWA files
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/sw.js.map
+public/workbox-*.js.map
+public/worker-*.js.map
+
+# Storybook build outputs
+storybook-static/

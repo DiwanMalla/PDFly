@@ -99,8 +99,16 @@ const PricingSection: React.FC = () => {
   ];
 
   return (
-    <section id="pricing" className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="pricing" className="py-20 bg-white relative">
+      {/* Blurry overlay and Coming Soon */}
+      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+        <div className="bg-white/30 backdrop-blur-sm w-full h-full flex items-center justify-center">
+          <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent drop-shadow-lg">
+            🚧 Pricing Coming Soon
+          </span>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 opacity-70 pointer-events-none select-none">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -155,8 +163,9 @@ const PricingSection: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Pricing Cards */}
+        {/* Pricing Cards (blurred, not interactive) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4">
+          {/* ...existing pricing cards code, now blurred and not interactive... */}
           {plans.map((plan, index) => {
             const IconComponent = plan.icon;
             return (
@@ -168,14 +177,7 @@ const PricingSection: React.FC = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className={`relative ${plan.popular ? "lg:-mt-4 lg:mb-4" : ""}`}
               >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-medium">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-
+                {/* ...existing card code... */}
                 <Card
                   className={`h-full ${
                     plan.popular ? "ring-2 ring-blue-500 shadow-lg" : ""
@@ -196,14 +198,12 @@ const PricingSection: React.FC = () => {
                         </div>
                       )}
                     </div>
-
                     <h3 className="text-xl font-bold text-gray-900 mb-2">
                       {plan.name}
                     </h3>
                     <p className="text-gray-600 text-sm mb-4">
                       {plan.description}
                     </p>
-
                     <div className="mb-6">
                       <span className="text-4xl font-bold text-gray-900">
                         {plan.price}
@@ -211,7 +211,6 @@ const PricingSection: React.FC = () => {
                       <span className="text-gray-600 ml-1">{plan.period}</span>
                     </div>
                   </CardHeader>
-
                   <CardContent className="pt-0">
                     <Button
                       className={`w-full mb-6 ${
@@ -220,19 +219,10 @@ const PricingSection: React.FC = () => {
                           : "bg-gray-100 text-gray-900 hover:bg-gray-200"
                       }`}
                       variant={plan.popular ? "primary" : "secondary"}
-                      onClick={() => {
-                        if (plan.name === "Free") {
-                          window.location.href = "/signup";
-                        } else if (plan.name === "Enterprise") {
-                          window.location.href = "/contact";
-                        } else {
-                          window.location.href = `/subscribe?plan=${plan.name.toLowerCase()}&annual=${annual}`;
-                        }
-                      }}
+                      disabled
                     >
                       {plan.cta}
                     </Button>
-
                     <div className="space-y-3">
                       {plan.features.map((feature, featureIndex) => (
                         <div
@@ -252,51 +242,6 @@ const PricingSection: React.FC = () => {
             );
           })}
         </div>
-
-        {/* FAQ Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-20 text-center"
-        >
-          <h3 className="text-2xl font-bold text-gray-900 mb-8">
-            Frequently Asked Questions
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {[
-              {
-                question: "Can I change plans anytime?",
-                answer:
-                  "Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.",
-              },
-              {
-                question: "Is there a free trial?",
-                answer:
-                  "Yes! All paid plans come with a 14-day free trial. No credit card required to start.",
-              },
-              {
-                question: "What payment methods do you accept?",
-                answer:
-                  "We accept all major credit cards, PayPal, and wire transfers for enterprise customers.",
-              },
-              {
-                question: "Do you offer refunds?",
-                answer:
-                  "Yes, we offer a 30-day money-back guarantee if you're not satisfied with our service.",
-              },
-            ].map((faq, index) => (
-              <div key={index} className="text-left">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  {faq.question}
-                </h4>
-                <p className="text-gray-600 text-sm">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
     </section>
   );
