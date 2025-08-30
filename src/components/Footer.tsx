@@ -76,10 +76,13 @@ const Footer: React.FC = () => {
           {/* Brand Section */}
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-2 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-xl">P</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <img
+                src="/logo.png"
+                alt="PDFly Logo"
+                className="w-20 h-20 object-contain drop-shadow-2xl rounded-2xl bg-white p-1 mx-2"
+                style={{ display: "block", backgroundColor: "white" }}
+              />
+              <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
                 PDFly
               </span>
             </div>

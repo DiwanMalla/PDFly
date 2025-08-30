@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X } from "@/components/ui/Icons";
 import Button from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +24,34 @@ const Navigation: React.FC = () => {
     { name: "Pricing", href: "#pricing" },
     { name: "API", href: "#api" },
     { name: "About", href: "#about" },
+  ];
+
+  const toolItems = [
+    {
+      name: "Compress PDF",
+      href: "/tools/compress",
+      icon: "🗜️",
+      desc: "Reduce file size",
+    },
+    {
+      name: "Convert PDF",
+      href: "/tools/convert",
+      icon: "🔄",
+      desc: "Change format",
+    },
+    {
+      name: "Merge PDF",
+      href: "/tools/merge",
+      icon: "➕",
+      desc: "Combine files",
+    },
+    {
+      name: "Split PDF",
+      href: "/tools/split",
+      icon: "✂️",
+      desc: "Separate pages",
+    },
+    // Add more tools as needed
   ];
 
   const [showFeedback, setShowFeedback] = useState(false);
@@ -47,12 +76,16 @@ const Navigation: React.FC = () => {
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
               <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg lg:text-xl">
-                    P
-                  </span>
-                </div>
-                <span className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <Image
+                  src="/logo.png"
+                  alt="PDFly Logo"
+                  width={96}
+                  height={96}
+                  className="w-20 h-20 lg:w-24 lg:h-24 object-contain drop-shadow-2xl rounded-2xl"
+                  style={{ display: "block" }}
+                  priority
+                />
+                <span className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
                   PDFly
                 </span>
               </Link>
@@ -70,6 +103,88 @@ const Navigation: React.FC = () => {
                   <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></span>
                 </Link>
               ))}
+
+              {/* Tools Dropdown */}
+              <div className="relative group">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative px-6 py-2.5 text-sm font-semibold flex items-center space-x-2 rounded-xl transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-purple-700 border border-blue-500/20 backdrop-blur-sm"
+                >
+                  <span className="text-lg">🛠️</span>
+                  <span>Tools</span>
+                  <motion.span className="text-sm transform transition-transform duration-200 group-hover:rotate-180">
+                    ⌄
+                  </motion.span>
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </motion.button>
+
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute left-0 mt-3 w-[480px] p-6 bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)",
+                      boxShadow:
+                        "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.1)",
+                    }}
+                  >
+                    <div className="mb-4">
+                      <h3 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                        PDF Tools
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Choose from our powerful PDF utilities
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {toolItems.map((tool, index) => (
+                        <motion.div
+                          key={tool.name}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <Link
+                            href={tool.href}
+                            className="group/item relative flex items-center p-4 rounded-2xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 border border-transparent hover:border-blue-200/50 hover:shadow-lg"
+                          >
+                            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center mr-3 group-hover/item:scale-110 transition-transform duration-200">
+                              <span className="text-xl">{tool.icon}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900 group-hover/item:text-blue-700 transition-colors">
+                                {tool.name}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {tool.desc}
+                              </p>
+                            </div>
+                            <div className="opacity-0 group-hover/item:opacity-100 transition-opacity duration-200">
+                              <span className="text-blue-600">→</span>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-gray-200/50">
+                      <Link
+                        href="/tools"
+                        className="block w-full text-center py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 hover:shadow-lg"
+                      >
+                        View All Tools
+                      </Link>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
               {/* Suggest/Report Bug Button */}
               <button
                 onClick={() => setShowFeedback(true)}

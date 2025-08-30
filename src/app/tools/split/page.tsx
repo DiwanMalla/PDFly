@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import { loadPDFPages } from "@/lib/pdf-utils";
 import { savePDFFile } from "@/lib/indexeddb-utils";
+import { PDFClientService } from "@/lib/pdf-client";
 import {
   ArrowLeft,
   Download,

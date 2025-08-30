@@ -13,6 +13,7 @@ import {
   Edit3 as Move,
   ExternalLink as Eye,
 } from "@/components/ui/Icons";
+import { PDFClientService } from "@/lib/pdf-client";
 
 interface PDFFile {
   id: string;
@@ -239,59 +240,28 @@ const MergePage: React.FC = () => {
     });
 
     try {
-      // Dynamic import to avoid SSR issues
-      const { PDFDocument } = await import("pdf-lib");
+      // Extract File objects from PDFFile objects
+      const files = uploadedFiles.map((pdfFile) => pdfFile.file);
 
-      // Step 1: Create new document
       setMergeProgress((prev) => ({
         ...prev,
-        progress: 10,
-        currentStep: "Creating merged document...",
-        speed: "1.2 MB/s",
+        progress: 20,
+        currentStep: "Uploading files...",
+        speed: "2.5 MB/s",
       }));
 
-      const mergedPdf = await PDFDocument.create();
+      // Use the PDF client service for merging
+      const result = await PDFClientService.mergePDFs(files);
 
-      // Step 2: Process each file
-      for (let i = 0; i < uploadedFiles.length; i++) {
-        const file = uploadedFiles[i];
-
-        setMergeProgress((prev) => ({
-          ...prev,
-          progress: 20 + (i * 60) / uploadedFiles.length,
-          currentStep: `Processing ${file.name}...`,
-          speed: "2.5 MB/s",
-        }));
-
-        // Read file as array buffer
-        const arrayBuffer = await file.file.arrayBuffer();
-
-        // Load PDF
-        const pdf = await PDFDocument.load(arrayBuffer);
-
-        // Copy all pages
-        const pageIndices = pdf.getPageIndices();
-        const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
-
-        // Add pages to merged document
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
-      }
-
-      // Step 3: Generate final PDF
       setMergeProgress((prev) => ({
         ...prev,
-        progress: 90,
+        progress: 80,
         currentStep: "Generating merged PDF...",
         speed: "3.1 MB/s",
       }));
 
-      const mergedPdfBytes = await mergedPdf.save();
-      const mergedBlob = new Blob([new Uint8Array(mergedPdfBytes)], {
-        type: "application/pdf",
-      });
-      const mergedPreview = URL.createObjectURL(mergedBlob);
+      const mergedPreview = URL.createObjectURL(result.blob);
 
-      // Step 4: Complete
       setMergeProgress((prev) => ({
         ...prev,
         progress: 100,
@@ -305,7 +275,7 @@ const MergePage: React.FC = () => {
         setMergedFile({
           preview: mergedPreview,
           downloadKey: "merged-" + Date.now(),
-          blob: mergedBlob, // Store the blob for download
+          blob: result.blob,
         });
       }, 500);
     } catch (error) {
@@ -315,7 +285,9 @@ const MergePage: React.FC = () => {
         isProcessing: false,
         currentStep: "Error occurred during merge",
       }));
-      alert("Failed to merge PDFs. Please try again.");
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      alert(`Failed to merge PDFs: ${errorMessage}`);
     }
   };
 

@@ -4,12 +4,27 @@ declare module "pdfjs-dist" {
     height: number;
   }
 
+  export interface TextItem {
+    str: string;
+    dir: string;
+    width: number;
+    height: number;
+    transform: number[];
+    fontName: string;
+  }
+
+  export interface TextContent {
+    items: TextItem[];
+    styles: Record<string, object>;
+  }
+
   export interface PDFPageProxy {
     getViewport(params: { scale: number }): PDFViewport;
     render(params: {
       canvasContext: CanvasRenderingContext2D;
       viewport: PDFViewport;
     }): { promise: Promise<void> };
+    getTextContent(): Promise<TextContent>;
   }
 
   export interface PDFDocumentProxy {
