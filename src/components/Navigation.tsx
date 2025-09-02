@@ -60,6 +60,7 @@ const Navigation: React.FC = () => {
       icon: "📝",
       desc: "AI-powered conversion",
       badge: "AI",
+      comingSoon: true,
     },
     {
       name: "Smart Extract",
@@ -67,6 +68,7 @@ const Navigation: React.FC = () => {
       icon: "🧠",
       desc: "Extract structured data",
       badge: "AI",
+      comingSoon: true,
     },
     {
       name: "Document Analysis",
@@ -74,6 +76,7 @@ const Navigation: React.FC = () => {
       icon: "📊",
       desc: "Analyze & summarize",
       badge: "AI",
+      comingSoon: true,
     },
     {
       name: "PII Removal",
@@ -81,6 +84,7 @@ const Navigation: React.FC = () => {
       icon: "🔒",
       desc: "Remove personal info",
       badge: "AI",
+      comingSoon: true,
     },
   ];
 
@@ -224,25 +228,32 @@ const Navigation: React.FC = () => {
                             key={tool.name}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: (toolItems.length + index) * 0.05 }}
+                            transition={{
+                              delay: (toolItems.length + index) * 0.05,
+                            }}
                           >
                             <Link
                               href={tool.href}
-                              className="group/item relative flex items-center p-4 rounded-2xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 border border-transparent hover:border-purple-200/50 hover:shadow-lg"
+                              className="group/item relative flex items-center p-4 rounded-2xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 border border-transparent hover:border-purple-200/50 hover:shadow-lg opacity-80 hover:opacity-100"
                             >
-                              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center mr-3 group-hover/item:scale-110 transition-transform duration-200 relative">
-                                <span className="text-xl">{tool.icon}</span>
+                              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mr-3 group-hover/item:scale-110 transition-transform duration-200 relative">
+                                <span className="text-xl text-gray-600">
+                                  {tool.icon}
+                                </span>
                                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                                   AI
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 group-hover/item:text-purple-700 transition-colors">
+                                <p className="font-semibold text-gray-700 group-hover/item:text-purple-700 transition-colors">
                                   {tool.name}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-0.5">
                                   {tool.desc}
                                 </p>
+                                <span className="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                                  Coming Soon
+                                </span>
                               </div>
                               <div className="opacity-0 group-hover/item:opacity-100 transition-opacity duration-200">
                                 <span className="text-purple-600">→</span>

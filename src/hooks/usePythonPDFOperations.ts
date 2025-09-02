@@ -60,7 +60,6 @@ export const usePythonPDFOperations = () => {
 
     try {
       const formData = new FormData();
-      const startTime = Date.now();
 
       // Calculate estimated time based on file size and format
       const calculateEstimatedTime = (

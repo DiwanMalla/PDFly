@@ -74,7 +74,7 @@ const CompressPage: React.FC = () => {
     setCompressedResult(null);
     try {
       const result = await compressPDF(
-        [uploadedFile],
+        uploadedFile,
         compressionLevel as "low" | "medium" | "high"
       );
       if (result) {
