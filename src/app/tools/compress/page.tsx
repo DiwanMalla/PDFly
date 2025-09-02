@@ -4,69 +4,63 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { ArrowLeft } from "@/components/ui/Icons";
-import { PDFClientService } from "@/lib/pdf-client";
+import {
+  usePythonPDFOperations,
+  type APIResponse,
+} from "@/hooks/usePythonPDFOperations";
 
 const CompressPage: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [compressionLevel, setCompressionLevel] = useState("medium");
   const [originalSize, setOriginalSize] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [compressedResult, setCompressedResult] = useState<{
-    size: string;
-    savings: string;
-    blob?: Blob;
-  } | null>(null);
   const [hasSettingsChanged, setHasSettingsChanged] = useState(false);
+  const [compressedResult, setCompressedResult] = useState<APIResponse | null>(
+    null
+  );
+
+  const {
+    isProcessing,
+    progress,
+    error,
+    compressPDF,
+    downloadFile,
+    clearError,
+  } = usePythonPDFOperations();
 
   useEffect(() => {
     const storedFileBlob = sessionStorage.getItem("initialFileBlob");
     const storedFileData = sessionStorage.getItem("initialFile");
-
     if (storedFileBlob && storedFileData) {
       try {
         const fileData = JSON.parse(storedFileData);
-
-        // Check if we have base64 data
         if (storedFileBlob.startsWith("data:")) {
-          // Convert base64 to blob
           fetch(storedFileBlob)
             .then((res) => res.blob())
             .then((blob) => {
               const file = new File([blob], fileData.name, {
                 type: "application/pdf",
               });
-
-              // Create a new blob URL for preview
               const newPreviewUrl = URL.createObjectURL(file);
-
               setPreviewUrl(newPreviewUrl);
               setUploadedFile(file);
               setOriginalSize(fileData.size);
             })
-            .catch((error) => {
-              console.error("Error converting base64 to blob:", error);
-              // Clear corrupted data
+            .catch(() => {
               sessionStorage.removeItem("initialFile");
               sessionStorage.removeItem("initialFileBlob");
             });
         } else {
-          // Legacy handling - assume it's already a blob URL
           setPreviewUrl(storedFileBlob);
           const file = new File([], fileData.name, { type: "application/pdf" });
           setUploadedFile(file);
           setOriginalSize(fileData.size);
         }
-
-        // Clean up sessionStorage after loading
         setTimeout(() => {
           sessionStorage.removeItem("initialFile");
           sessionStorage.removeItem("initialFileBlob");
         }, 1000);
-      } catch (error) {
-        console.error("Error parsing stored file data:", error);
-        // Clear corrupted data
+      } catch {
         sessionStorage.removeItem("initialFile");
         sessionStorage.removeItem("initialFileBlob");
       }
@@ -75,71 +69,44 @@ const CompressPage: React.FC = () => {
 
   const handleCompress = async () => {
     if (!uploadedFile) return;
-
-    setIsProcessing(true);
-    setProgress(0);
     setHasSettingsChanged(false);
-
+    clearError();
+    setCompressedResult(null);
     try {
-      setProgress(20);
-
-      // Use the PDF client service for compression
-      const result = await PDFClientService.compressPDF(
-        uploadedFile,
+      const result = await compressPDF(
+        [uploadedFile],
         compressionLevel as "low" | "medium" | "high"
       );
-
-      setProgress(80);
-
-      setCompressedResult({
-        size: PDFClientService.formatFileSize(result.compressedSize),
-        savings: `${result.compressionRatio}%`,
-        blob: result.blob,
-      });
-
-      setProgress(100);
-
-      setTimeout(() => {
-        setIsProcessing(false);
-      }, 500);
-    } catch (error) {
-      console.error("Compression error:", error);
-      setIsProcessing(false);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      alert(`Failed to compress PDF: ${errorMessage}`);
+      if (result) {
+        setCompressedResult(result);
+      }
+    } catch {
+      // Error handled by hook
     }
   };
 
-  // TODO: Later disable download without signin
   const handleDownload = () => {
-    if (!compressedResult?.blob || !uploadedFile) return;
-
-    const url = URL.createObjectURL(compressedResult.blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `compressed_${uploadedFile.name}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (!compressedResult || !uploadedFile) return;
+    if (
+      compressedResult.converted_files &&
+      compressedResult.converted_files.length > 0
+    ) {
+      const file = compressedResult.converted_files[0];
+      downloadFile(compressedResult.job_id, file.converted_name);
+    }
   };
 
-  // Reset when compression settings change
   const handleCompressionChange = (value: string) => {
     setCompressionLevel(value);
     if (compressedResult) {
       setHasSettingsChanged(true);
-      // Don't clear result immediately, just mark as changed
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Navigation />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -164,11 +131,8 @@ const CompressPage: React.FC = () => {
             </div>
           </div>
         </motion.div>
-
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left Column - Controls */}
           <div className="space-y-8">
-            {/* File Upload Section */}
             {!uploadedFile && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -212,8 +176,6 @@ const CompressPage: React.FC = () => {
                 </div>
               </motion.div>
             )}
-
-            {/* Compression Settings */}
             {uploadedFile && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -235,8 +197,6 @@ const CompressPage: React.FC = () => {
                     </motion.span>
                   )}
                 </div>
-
-                {/* File Info */}
                 <div className="mb-8 p-5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border border-gray-200/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -256,13 +216,10 @@ const CompressPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Compression Options */}
                 <div className="space-y-4 mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-6">
                     Choose Compression Level
                   </h3>
-
                   {[
                     {
                       value: "low",
@@ -319,8 +276,6 @@ const CompressPage: React.FC = () => {
                     </motion.label>
                   ))}
                 </div>
-
-                {/* Compress Button */}
                 {!isProcessing && (!compressedResult || hasSettingsChanged) && (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -334,8 +289,6 @@ const CompressPage: React.FC = () => {
                 )}
               </motion.div>
             )}
-
-            {/* Processing State */}
             {isProcessing && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -359,7 +312,6 @@ const CompressPage: React.FC = () => {
                 <p className="text-gray-600 mb-6 text-lg">
                   Please wait while we optimize your file...
                 </p>
-
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
@@ -372,8 +324,6 @@ const CompressPage: React.FC = () => {
                 </p>
               </motion.div>
             )}
-
-            {/* Results */}
             {compressedResult && !hasSettingsChanged && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -391,8 +341,6 @@ const CompressPage: React.FC = () => {
                     Your PDF has been successfully optimized
                   </p>
                 </div>
-
-                {/* Stats */}
                 <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 space-y-4 mb-8 border border-white/50">
                   <div className="flex justify-between items-center text-lg">
                     <span className="text-gray-600">Original size:</span>
@@ -400,23 +348,19 @@ const CompressPage: React.FC = () => {
                       {originalSize}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-lg">
-                    <span className="text-gray-600">Compressed size:</span>
-                    <span className="font-bold text-green-600">
-                      {compressedResult.size}
-                    </span>
-                  </div>
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="flex justify-between items-center text-xl">
-                      <span className="text-gray-600">Space saved:</span>
-                      <span className="font-bold text-green-600 text-2xl">
-                        {compressedResult.savings}
-                      </span>
-                    </div>
-                  </div>
+                  {compressedResult.converted_files &&
+                    compressedResult.converted_files.length > 0 && (
+                      <div className="flex justify-between items-center text-lg">
+                        <span className="text-gray-600">Compressed size:</span>
+                        <span className="font-bold text-green-600">
+                          {compressedResult.converted_files[0].size_mb.toFixed(
+                            2
+                          )}{" "}
+                          MB
+                        </span>
+                      </div>
+                    )}
                 </div>
-
-                {/* Download Button */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -426,8 +370,6 @@ const CompressPage: React.FC = () => {
                   <span className="text-xl mr-3">📥</span>
                   Download Compressed PDF
                 </motion.button>
-
-                {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-4">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -448,9 +390,40 @@ const CompressPage: React.FC = () => {
                 </div>
               </motion.div>
             )}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-8 shadow-lg border border-red-200/50 mb-8"
+              >
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-red-400 to-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">❌</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Compression Failed
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    We encountered an issue while compressing your file
+                  </p>
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                </div>
+                <motion.button
+                  onClick={clearError}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 btn-futuristic"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="flex items-center justify-center space-x-2">
+                    <span>🔄</span>
+                    <span>Try Again</span>
+                  </span>
+                </motion.button>
+              </motion.div>
+            )}
           </div>
-
-          {/* Right Column - Preview */}
           <div className="space-y-8">
             {previewUrl && (
               <motion.div

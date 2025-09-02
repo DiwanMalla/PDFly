@@ -51,7 +51,37 @@ const Navigation: React.FC = () => {
       icon: "✂️",
       desc: "Separate pages",
     },
-    // Add more tools as needed
+  ];
+
+  const aiToolItems = [
+    {
+      name: "PDF to Markdown",
+      href: "/tools/ai-convert",
+      icon: "📝",
+      desc: "AI-powered conversion",
+      badge: "AI",
+    },
+    {
+      name: "Smart Extract",
+      href: "/tools/ai-extract",
+      icon: "🧠",
+      desc: "Extract structured data",
+      badge: "AI",
+    },
+    {
+      name: "Document Analysis",
+      href: "/tools/ai-analyze",
+      icon: "📊",
+      desc: "Analyze & summarize",
+      badge: "AI",
+    },
+    {
+      name: "PII Removal",
+      href: "/tools/ai-anonymize",
+      icon: "🔒",
+      desc: "Remove personal info",
+      badge: "AI",
+    },
   ];
 
   const [showFeedback, setShowFeedback] = useState(false);
@@ -125,7 +155,7 @@ const Navigation: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute left-0 mt-3 w-[480px] p-6 bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300"
+                    className="absolute left-0 mt-3 w-[520px] p-6 bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300"
                     style={{
                       background:
                         "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)",
@@ -133,16 +163,17 @@ const Navigation: React.FC = () => {
                         "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.1)",
                     }}
                   >
-                    <div className="mb-4">
+                    {/* Standard PDF Tools Section */}
+                    <div className="mb-6">
                       <h3 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                         PDF Tools
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">
-                        Choose from our powerful PDF utilities
+                        Essential PDF utilities
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 mb-6">
                       {toolItems.map((tool, index) => (
                         <motion.div
                           key={tool.name}
@@ -171,6 +202,55 @@ const Navigation: React.FC = () => {
                           </Link>
                         </motion.div>
                       ))}
+                    </div>
+
+                    {/* AI-Powered Tools Section */}
+                    <div className="border-t border-gray-200/50 pt-6">
+                      <div className="mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                          AI-Powered Tools
+                        </h3>
+                        <span className="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-bold rounded-full">
+                          NEW
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Advanced AI-driven document processing
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {aiToolItems.map((tool, index) => (
+                          <motion.div
+                            key={tool.name}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: (toolItems.length + index) * 0.05 }}
+                          >
+                            <Link
+                              href={tool.href}
+                              className="group/item relative flex items-center p-4 rounded-2xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 border border-transparent hover:border-purple-200/50 hover:shadow-lg"
+                            >
+                              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center mr-3 group-hover/item:scale-110 transition-transform duration-200 relative">
+                                <span className="text-xl">{tool.icon}</span>
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                  AI
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-gray-900 group-hover/item:text-purple-700 transition-colors">
+                                  {tool.name}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {tool.desc}
+                                </p>
+                              </div>
+                              <div className="opacity-0 group-hover/item:opacity-100 transition-opacity duration-200">
+                                <span className="text-purple-600">→</span>
+                              </div>
+                            </Link>
+                          </motion.div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="mt-6 pt-4 border-t border-gray-200/50">
